@@ -6,8 +6,8 @@
 # Features:
 # - Install from common-applist.txt
 # - Support 'yay' and 'flatpak' prefixes
-# - Retry mechanism for stability
-# - Ctrl+C to SKIP current app (Exit Code 130 handling)
+# - Retry mechanism for stability (Network errors)
+# - Ctrl+C to SKIP current app (Exit Code 130 handling) - NO RETRY on manual interrupt
 # - Steam Chinese Locale Fix
 # ==============================================================================
 
@@ -18,8 +18,9 @@ source "$SCRIPT_DIR/00-utils.sh"
 check_root
 
 # --- Interrupt Handler ---
-# Catch Ctrl+C (SIGINT), print message, and continue script execution
-trap 'echo -e "\n${H_YELLOW}>>> Operation cancelled by user (Ctrl+C). Skipping current item...${NC}"' INT
+# We catch SIGINT just to print a newline/message, preventing the script from 
+# hard-crashing instantly, allowing us to handle the Exit Code 130 in logic.
+trap 'echo -e "\n${H_YELLOW}>>> Signal caught (Ctrl+C). Handling...${NC}"' INT
 
 log ">>> Starting Phase 5: Common Applications Setup"
 
@@ -47,7 +48,7 @@ box_title "OPTIONAL: Common Applications" "${H_CYAN}"
 
 echo -e "   This module reads from: ${BOLD}common-applist.txt${NC}"
 echo -e "   Format: ${DIM}lines starting with 'flatpak:' use Flatpak, others use Yay.${NC}"
-echo -e "   ${H_YELLOW}Tip: Press Ctrl+C during installation to skip a slow package.${NC}"
+echo -e "   ${H_YELLOW}Tip: Press Ctrl+C during any install to SKIP that package.${NC}"
 echo ""
 
 read -p "$(echo -e ${H_YELLOW}"   Do you want to install these applications? [Y/n] "${NC})" choice
@@ -55,7 +56,7 @@ choice=${choice:-Y}
 
 if [[ ! "$choice" =~ ^[Yy]$ ]]; then
     log "User skipped application installation."
-    trap - INT # Reset trap before exit
+    trap - INT
     exit 0
 fi
 
@@ -99,7 +100,7 @@ fi
 if [ ${#YAY_APPS[@]} -gt 0 ]; then
     section "Step 3a/4" "Installing System Packages (Yay)"
     
-    # Configure NOPASSWD
+    # Configure NOPASSWD for user convenience
     SUDO_TEMP_FILE="/etc/sudoers.d/99_shorin_installer_apps"
     echo "$TARGET_USER ALL=(ALL) NOPASSWD: ALL" > "$SUDO_TEMP_FILE"
     chmod 440 "$SUDO_TEMP_FILE"
@@ -114,9 +115,11 @@ if [ ${#YAY_APPS[@]} -gt 0 ]; then
     if [ $batch_ret -eq 0 ]; then
         success "All system packages installed successfully."
     elif [ $batch_ret -eq 130 ]; then
-        warn "Batch install interrupted by user. Switching to One-by-One mode to allow selective skipping..."
+        # [LOGIC FIX] Batch interrupted by user. Don't fail, but switch to manual to allow skipping.
+        warn "Batch install INTERRUPTED by user (Ctrl+C)."
+        warn "Switching to One-by-One mode so you can skip specific packages..."
     else
-        warn "Batch install failed. Switching to One-by-One mode..."
+        warn "Batch install failed (Code $batch_ret). Switching to One-by-One mode..."
     fi
     
     # Fallback / Retry One-by-One
@@ -125,30 +128,30 @@ if [ ${#YAY_APPS[@]} -gt 0 ]; then
             cmd "yay -S $pkg"
             
             # Attempt 1
-            if ! runuser -u "$TARGET_USER" -- yay -S --noconfirm --needed --answerdiff=None --answerclean=None "$pkg"; then
-                ret=$?
-                
-                # Check if User Cancelled (130)
-                if [ $ret -eq 130 ]; then
-                    warn "Skipped '$pkg' (User Cancelled)."
-                    continue # Skip retry, move to next app
-                fi
-                
-                # Retry Attempt 2 (Only if not cancelled)
-                warn "Failed to install '$pkg'. Retrying (Attempt 2/2)..."
-                if ! runuser -u "$TARGET_USER" -- yay -S --noconfirm --needed --answerdiff=None --answerclean=None "$pkg"; then
-                    ret_retry=$?
-                    if [ $ret_retry -eq 130 ]; then
-                        warn "Skipped '$pkg' during retry."
-                    else
-                        error "Failed to install: $pkg"
-                        FAILED_PACKAGES+=("yay:$pkg")
-                    fi
-                else
-                    success "Installed: $pkg (on retry)"
-                fi
+            runuser -u "$TARGET_USER" -- yay -S --noconfirm --needed --answerdiff=None --answerclean=None "$pkg"
+            ret=$?
+            
+            if [ $ret -eq 0 ]; then
+                success "Installed: $pkg"
+            elif [ $ret -eq 130 ]; then
+                # [LOGIC FIX] User hit Ctrl+C. Do NOT retry. Skip to next.
+                warn "Skipped '$pkg' (User Cancelled)."
+                continue 
             else
-                success "Installed: $pkg" 
+                # Genuine Error -> Retry
+                warn "Failed to install '$pkg' (Code $ret). Retrying (Attempt 2/2)..."
+                
+                runuser -u "$TARGET_USER" -- yay -S --noconfirm --needed --answerdiff=None --answerclean=None "$pkg"
+                ret_retry=$?
+                
+                if [ $ret_retry -eq 0 ]; then
+                    success "Installed: $pkg (on retry)"
+                elif [ $ret_retry -eq 130 ]; then
+                    warn "Skipped '$pkg' during retry (User Cancelled)."
+                else
+                    error "Failed to install: $pkg"
+                    FAILED_PACKAGES+=("yay:$pkg")
+                fi
             fi
         done
     fi
@@ -164,29 +167,37 @@ if [ ${#FLATPAK_APPS[@]} -gt 0 ]; then
         cmd "flatpak install $app"
         
         # Attempt 1
-        if flatpak install -y flathub "$app" > /dev/null 2>&1; then
+        flatpak install -y flathub "$app" > /dev/null 2>&1
+        ret=$?
+        
+        if [ $ret -eq 0 ]; then
             success "Installed: $app"
+        elif [ $ret -eq 130 ]; then
+            # [LOGIC FIX] User hit Ctrl+C. Skip immediately.
+            warn "Skipped '$app' (User Cancelled)."
+            continue
         else
-            ret=$?
-            if [ $ret -eq 130 ]; then
-                warn "Skipped '$app' (User Cancelled)."
-                continue
+            warn "Flatpak install failed for '$app'. Waiting 3s to Retry..."
+            
+            # [LOGIC FIX] If user Ctrl+C during wait, sleep exits. We must check sleep's exit code.
+            # OR we simply use 'read' with timeout which is cleaner to interrupt.
+            sleep 3
+            if [ $? -gt 128 ]; then 
+                 warn "Retry cancelled by user during wait."
+                 continue
             fi
             
-            warn "Flatpak install failed for '$app'. Waiting 3s to Retry..."
-            sleep 3
-            
             # Attempt 2
-            if flatpak install -y flathub "$app" > /dev/null 2>&1; then
+            flatpak install -y flathub "$app" > /dev/null 2>&1
+            ret_retry=$?
+            
+            if [ $ret_retry -eq 0 ]; then
                 success "Installed: $app (on retry)"
+            elif [ $ret_retry -eq 130 ]; then
+                warn "Skipped '$app' during retry."
             else
-                ret_retry=$?
-                if [ $ret_retry -eq 130 ]; then
-                    warn "Skipped '$app' during retry."
-                else
-                    error "Failed to install Flatpak: $app"
-                    FAILED_PACKAGES+=("flatpak:$app")
-                fi
+                error "Failed to install Flatpak: $app"
+                FAILED_PACKAGES+=("flatpak:$app")
             fi
         fi
     done

@@ -106,7 +106,7 @@ pacman -S --noconfirm --needed $PKGS > /dev/null 2>&1
 success "Niri core packages installed."
 
 # --- Firefox Extension Auto-Install (Pywalfox) ---
-# [FIXED] Changed InstallOrUpdate to Install to fix policy error
+# [FIXED] Changed InstallOrUpdate to Install
 log "Configuring Firefox Enterprise Policies..."
 FIREFOX_POLICY_DIR="/etc/firefox/policies"
 cmd "mkdir -p $FIREFOX_POLICY_DIR"
@@ -233,13 +233,20 @@ if [ -f "$LIST_FILE" ]; then
         done
         
         # --- Phase 1: Batch Install ---
-        # Note: Default yay behavior keeps build dependencies. No --removemake used.
         if [ -n "$BATCH_LIST" ]; then
             log "Phase 1: Batch Install (Standard Pkgs)..."
             
             # Attempt 1
-            if ! runuser -u "$TARGET_USER" -- env GOPROXY=$GOPROXY yay -S --noconfirm --needed --answerdiff=None --answerclean=None $BATCH_LIST; then
-                warn "Batch failed. Toggling Mirror and Retrying..."
+            runuser -u "$TARGET_USER" -- env GOPROXY=$GOPROXY yay -S --noconfirm --needed --answerdiff=None --answerclean=None $BATCH_LIST
+            RET_CODE=$?
+
+            if [ $RET_CODE -eq 0 ]; then
+                success "Batch installed."
+            elif [ $RET_CODE -eq 130 ]; then
+                # [FIXED] User interrupted via Ctrl+C, skip retry
+                warn "Batch install interrupted by user (Ctrl+C). Skipping retry."
+            else
+                warn "Batch failed (Code $RET_CODE). Toggling Mirror and Retrying..."
                 
                 # Toggle Mirror
                 if runuser -u "$TARGET_USER" -- git config --global --get url."https://gitclone.com/github.com/".insteadOf > /dev/null; then
@@ -249,13 +256,16 @@ if [ -f "$LIST_FILE" ]; then
                 fi
                 
                 # Attempt 2
-                if ! runuser -u "$TARGET_USER" -- env GOPROXY=$GOPROXY yay -S --noconfirm --needed --answerdiff=None --answerclean=None $BATCH_LIST; then
-                    error "Batch install failed. Check logs."
-                else
+                runuser -u "$TARGET_USER" -- env GOPROXY=$GOPROXY yay -S --noconfirm --needed --answerdiff=None --answerclean=None $BATCH_LIST
+                RET_CODE_2=$?
+                
+                if [ $RET_CODE_2 -eq 0 ]; then
                     success "Batch installed (Retry)."
+                elif [ $RET_CODE_2 -eq 130 ]; then
+                    warn "Batch retry interrupted by user."
+                else
+                    error "Batch install failed. Check logs."
                 fi
-            else
-                success "Batch installed."
             fi
         fi
 
@@ -266,8 +276,17 @@ if [ -f "$LIST_FILE" ]; then
                 cmd "yay -S $git_pkg"
                 
                 # Attempt 1
-                if ! runuser -u "$TARGET_USER" -- env GOPROXY=$GOPROXY yay -S --noconfirm --needed --answerdiff=None --answerclean=None "$git_pkg"; then
-                    warn "Failed. Toggling Mirror..."
+                runuser -u "$TARGET_USER" -- env GOPROXY=$GOPROXY yay -S --noconfirm --needed --answerdiff=None --answerclean=None "$git_pkg"
+                RET_CODE=$?
+
+                if [ $RET_CODE -eq 0 ]; then
+                    success "Installed $git_pkg"
+                elif [ $RET_CODE -eq 130 ]; then
+                    # [FIXED] User interrupted via Ctrl+C, skip retry and move to next package
+                    warn "Installation of '$git_pkg' interrupted by user. Skipping retries."
+                    FAILED_PACKAGES+=("$git_pkg (User Interrupted)")
+                else
+                    warn "Failed (Code $RET_CODE). Toggling Mirror..."
                     
                     # Toggle Logic
                     if runuser -u "$TARGET_USER" -- git config --global --get url."https://gitclone.com/github.com/".insteadOf > /dev/null; then
@@ -277,7 +296,15 @@ if [ -f "$LIST_FILE" ]; then
                     fi
                     
                     # Attempt 2
-                    if ! runuser -u "$TARGET_USER" -- env GOPROXY=$GOPROXY yay -S --noconfirm --needed --answerdiff=None --answerclean=None "$git_pkg"; then
+                    runuser -u "$TARGET_USER" -- env GOPROXY=$GOPROXY yay -S --noconfirm --needed --answerdiff=None --answerclean=None "$git_pkg"
+                    RET_CODE_2=$?
+                    
+                    if [ $RET_CODE_2 -eq 0 ]; then
+                        success "Installed $git_pkg (On Retry)"
+                    elif [ $RET_CODE_2 -eq 130 ]; then
+                        warn "Retry interrupted by user."
+                        FAILED_PACKAGES+=("$git_pkg (User Interrupted)")
+                    else
                         
                         # --- [NEW] Local Package Fallback ---
                         warn "Network install failed for '$git_pkg'. Checking local compiled cache..."
@@ -288,11 +315,7 @@ if [ -f "$LIST_FILE" ]; then
                             error "Failed: $git_pkg (Network & Local both failed)"
                             FAILED_PACKAGES+=("$git_pkg")
                         fi
-                    else
-                        success "Installed $git_pkg (On Retry)"
                     fi
-                else
-                    success "Installed $git_pkg"
                 fi
             done
         fi
@@ -307,8 +330,6 @@ if [ -f "$LIST_FILE" ]; then
         fi
 
         # Awww Recovery (Ultimate Check)
-        # If install_local_fallback succeeded above, this should pass.
-        # If it failed, we warn here and rely on Swaybg later.
         if ! command -v awww &> /dev/null; then
             warn "Awww not found. Will fallback to Swaybg in next step."
         fi
