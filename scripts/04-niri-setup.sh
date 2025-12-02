@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# 04-niri-setup.sh - Niri Desktop (Visual Enhanced)
+# 04-niri-setup.sh - Niri Desktop (Visual Enhanced & -Syu Fixed)
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -25,17 +25,23 @@ install_local_fallback() {
     
     if [ -f "$pkg_file" ]; then
         warn "Network install failed. Using local fallback..."
-        exe runuser -u "$TARGET_USER" -- yay -U --noconfirm "$pkg_file"
-        return $?
+        # [FIX] yay -U usually handles local files, no -Syu needed here
+        if exe runuser -u "$TARGET_USER" -- yay -U --noconfirm "$pkg_file"; then
+            success "Installed from local backup."
+            return 0
+        else
+            error "Local package install failed."
+            return 1
+        fi
     else
         return 1
     fi
 }
 
-log "Starting Niri Setup..."
+section "Phase 4" "Niri Desktop Environment"
 
 # ------------------------------------------------------------------------------
-# 0. User
+# 0. Identify Target User
 # ------------------------------------------------------------------------------
 log "Identifying user..."
 DETECTED_USER=$(awk -F: '$3 == 1000 {print $1}' /etc/passwd)
@@ -49,13 +55,37 @@ HOME_DIR="/home/$TARGET_USER"
 info_kv "Target" "$TARGET_USER"
 
 # ------------------------------------------------------------------------------
-# 1. Niri Core
+# [SAFETY CHECK] Detect Existing Display Managers
 # ------------------------------------------------------------------------------
-log "Installing Core Packages..."
-PKGS="niri xwayland-satellite xdg-desktop-portal-gnome fuzzel kitty firefox libnotify mako polkit-gnome pciutils"
-exe pacman -S --noconfirm --needed $PKGS
+log "Checking Display Managers..."
 
-# Firefox Policy
+DMS=("gdm" "sddm" "lightdm" "lxdm" "ly")
+SKIP_AUTOLOGIN=false
+
+for dm in "${DMS[@]}"; do
+    if systemctl is-enabled "$dm.service" &>/dev/null; then
+        info_kv "DM Detected" "$dm" "${H_YELLOW}(Active)${NC}"
+        warn "TTY auto-login configuration will be SKIPPED."
+        SKIP_AUTOLOGIN=true
+        break
+    fi
+done
+
+if [ "$SKIP_AUTOLOGIN" = false ]; then
+    log "No active DM. TTY auto-login will be configured."
+fi
+
+# ------------------------------------------------------------------------------
+# 1. Install Niri & Essentials
+# ------------------------------------------------------------------------------
+section "Step 1/9" "Core Components"
+
+log "Installing Niri & Essentials..."
+PKGS="niri xwayland-satellite xdg-desktop-portal-gnome fuzzel kitty firefox libnotify mako polkit-gnome pciutils"
+# [FIX] -S -> -Syu
+exe pacman -Syu --noconfirm --needed $PKGS
+
+# Firefox Policy (Pywalfox)
 log "Configuring Firefox Policies..."
 FIREFOX_POLICY_DIR="/etc/firefox/policies"
 exe mkdir -p "$FIREFOX_POLICY_DIR"
@@ -71,13 +101,15 @@ cat <<EOT > "$FIREFOX_POLICY_DIR/policies.json"
   }
 }
 EOT
-success "Policy written."
+success "Firefox policy applied."
 
 # ------------------------------------------------------------------------------
-# 2. Nautilus & GPU
+# 2. File Manager (Nautilus) Setup
 # ------------------------------------------------------------------------------
-log "Configuring Nautilus..."
-exe pacman -S --noconfirm --needed ffmpegthumbnailer gvfs-smb nautilus-open-any-terminal file-roller gnome-keyring gst-plugins-base gst-plugins-good gst-libav nautilus
+section "Step 2/9" "File Manager & GPU"
+
+# [FIX] -S -> -Syu
+exe pacman -Syu --noconfirm --needed ffmpegthumbnailer gvfs-smb nautilus-open-any-terminal file-roller gnome-keyring gst-plugins-base gst-plugins-good gst-libav nautilus
 
 if [ ! -f /usr/bin/gnome-terminal ] || [ -L /usr/bin/gnome-terminal ]; then
     exe ln -sf /usr/bin/kitty /usr/bin/gnome-terminal
@@ -86,13 +118,14 @@ fi
 # Smart GPU Env
 DESKTOP_FILE="/usr/share/applications/org.gnome.Nautilus.desktop"
 if [ -f "$DESKTOP_FILE" ]; then
-    log "Checking GPU..."
+    log "Checking GPU configuration..."
+    
     GPU_COUNT=$(lspci | grep -E -i "vga|3d" | wc -l)
     HAS_NVIDIA=$(lspci | grep -E -i "nvidia" | wc -l)
     
     ENV_VARS="env GTK_IM_MODULE=fcitx"
     if [ "$GPU_COUNT" -gt 1 ] && [ "$HAS_NVIDIA" -gt 0 ]; then
-        info_kv "GPU" "Hybrid Nvidia" "-> Adding GSK_RENDERER=gl"
+        info_kv "GPU" "Hybrid Nvidia" "-> GSK_RENDERER=gl"
         ENV_VARS="env GSK_RENDERER=gl GTK_IM_MODULE=fcitx"
     fi
     
@@ -100,10 +133,12 @@ if [ -f "$DESKTOP_FILE" ]; then
 fi
 
 # ------------------------------------------------------------------------------
-# 3. Network
+# 3. Network Optimization
 # ------------------------------------------------------------------------------
-log "Configuring Network Sources..."
-exe pacman -S --noconfirm --needed flatpak gnome-software
+section "Step 3/9" "Network Optimization"
+
+# [FIX] -S -> -Syu
+exe pacman -Syu --noconfirm --needed flatpak gnome-software
 exe flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
 IS_CN_ENV=false
@@ -131,9 +166,9 @@ echo "$TARGET_USER ALL=(ALL) NOPASSWD: ALL" > "$SUDO_TEMP_FILE"
 chmod 440 "$SUDO_TEMP_FILE"
 
 # ------------------------------------------------------------------------------
-# 4. Dependencies
+# 4. Install Dependencies
 # ------------------------------------------------------------------------------
-log "Installing Dependencies (AUR)..."
+section "Step 4/9" "Installing Dependencies"
 
 LIST_FILE="$PARENT_DIR/niri-applist.txt"
 FAILED_PACKAGES=()
@@ -147,6 +182,7 @@ if [ -f "$LIST_FILE" ]; then
 
         for pkg in "${PACKAGE_ARRAY[@]}"; do
             [ "$pkg" == "imagemagic" ] && pkg="imagemagick"
+            
             if [[ "$pkg" == *"-git" ]]; then
                 GIT_LIST+=("$pkg")
             else
@@ -154,33 +190,39 @@ if [ -f "$LIST_FILE" ]; then
             fi
         done
         
-        # Phase 1: Batch
+        # --- Phase 1: Batch Install ---
         if [ -n "$BATCH_LIST" ]; then
             log "Phase 1: Batch Install..."
-            # 使用 exe 包装命令，实现可视化
-            if ! exe runuser -u "$TARGET_USER" -- env GOPROXY=$GOPROXY yay -S --noconfirm --needed --answerdiff=None --answerclean=None $BATCH_LIST; then
+            
+            # Attempt 1
+            # [FIX] yay -S -> yay -Syu
+            if ! exe runuser -u "$TARGET_USER" -- env GOPROXY=$GOPROXY yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None $BATCH_LIST; then
                 warn "Batch failed. Retrying with Mirror Toggle..."
                 
-                # Toggle Mirror Logic
+                # Toggle Mirror
                 if runuser -u "$TARGET_USER" -- git config --global --get url."https://gitclone.com/github.com/".insteadOf > /dev/null; then
                     runuser -u "$TARGET_USER" -- git config --global --unset url."https://gitclone.com/github.com/".insteadOf
                 else
                     runuser -u "$TARGET_USER" -- git config --global url."https://gitclone.com/github.com/".insteadOf "https://github.com/"
                 fi
                 
-                if ! exe runuser -u "$TARGET_USER" -- env GOPROXY=$GOPROXY yay -S --noconfirm --needed --answerdiff=None --answerclean=None $BATCH_LIST; then
-                    error "Batch install failed."
+                # Attempt 2
+                # [FIX] yay -S -> yay -Syu
+                if ! exe runuser -u "$TARGET_USER" -- env GOPROXY=$GOPROXY yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None $BATCH_LIST; then
+                    error "Batch install failed. Check logs."
                 else
                     success "Batch installed (Retry)."
                 fi
             fi
         fi
 
-        # Phase 2: Git Install
+        # --- Phase 2: Git Install ---
         if [ ${#GIT_LIST[@]} -gt 0 ]; then
             log "Phase 2: Git Install..."
             for git_pkg in "${GIT_LIST[@]}"; do
-                if ! exe runuser -u "$TARGET_USER" -- env GOPROXY=$GOPROXY yay -S --noconfirm --needed --answerdiff=None --answerclean=None "$git_pkg"; then
+                # Attempt 1
+                # [FIX] yay -S -> yay -Syu
+                if ! exe runuser -u "$TARGET_USER" -- env GOPROXY=$GOPROXY yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None "$git_pkg"; then
                     warn "Install failed. Retrying..."
                     
                     # Toggle Mirror
@@ -190,10 +232,12 @@ if [ -f "$LIST_FILE" ]; then
                         runuser -u "$TARGET_USER" -- git config --global url."https://gitclone.com/github.com/".insteadOf "https://github.com/"
                     fi
                     
-                    if ! exe runuser -u "$TARGET_USER" -- env GOPROXY=$GOPROXY yay -S --noconfirm --needed --answerdiff=None --answerclean=None "$git_pkg"; then
+                    # Attempt 2
+                    # [FIX] yay -S -> yay -Syu
+                    if ! exe runuser -u "$TARGET_USER" -- env GOPROXY=$GOPROXY yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None "$git_pkg"; then
                         
                         # Local Fallback
-                        warn "Network failed. Checking local cache..."
+                        warn "Checking local cache..."
                         if install_local_fallback "$git_pkg"; then
                             :
                         else
@@ -201,20 +245,24 @@ if [ -f "$LIST_FILE" ]; then
                             FAILED_PACKAGES+=("$git_pkg")
                         fi
                     else
-                        success "Installed $git_pkg"
+                        success "Installed $git_pkg (Retry)"
                     fi
+                else
+                    success "Installed $git_pkg"
                 fi
             done
         fi
         
-        # Recovery
-        log "Running Recovery Checks..."
+        # --- Recovery Checks ---
+        log "Verifying critical components..."
+        
         if ! command -v waybar &> /dev/null; then
             warn "Waybar missing. Installing stock..."
-            exe pacman -S --noconfirm --needed waybar
+            # [FIX] -S -> -Syu
+            exe pacman -Syu --noconfirm --needed waybar
         fi
 
-        if ! command -v awww &> /dev/null; then
+        if ! runuser -u "$TARGET_USER" -- command -v awww &> /dev/null; then
             warn "Awww not found. Will try Swaybg later."
         fi
 
@@ -228,19 +276,23 @@ if [ -f "$LIST_FILE" ]; then
             error "Some packages failed. See: $REPORT_FILE"
         fi
     fi
+else
+    warn "niri-applist.txt not found."
 fi
 
 # ------------------------------------------------------------------------------
 # 5. Dotfiles
 # ------------------------------------------------------------------------------
-log "Deploying Dotfiles..."
+section "Step 5/9" "Deploying Dotfiles"
 
 REPO_URL="https://github.com/SHORiN-KiWATA/ShorinArchExperience-ArchlinuxGuide.git"
 TEMP_DIR="/tmp/shorin-repo"
 rm -rf "$TEMP_DIR"
 
+log "Cloning repository..."
+# Attempt 1
 if ! exe runuser -u "$TARGET_USER" -- git clone "$REPO_URL" "$TEMP_DIR"; then
-    warn "Clone failed. Retrying with Mirror Toggle..."
+    warn "Clone failed. Retrying..."
     if runuser -u "$TARGET_USER" -- git config --global --get url."https://gitclone.com/github.com/".insteadOf > /dev/null; then
         runuser -u "$TARGET_USER" -- git config --global --unset url."https://gitclone.com/github.com/".insteadOf
     else
@@ -259,6 +311,7 @@ if [ -d "$TEMP_DIR/dotfiles" ]; then
     
     log "Applying dotfiles..."
     exe runuser -u "$TARGET_USER" -- cp -rf "$TEMP_DIR/dotfiles/." "$HOME_DIR/"
+    success "Dotfiles applied."
     
     if [ "$TARGET_USER" != "shorin" ]; then
         OUTPUT_KDL="$HOME_DIR/.config/niri/output.kdl"
@@ -271,40 +324,50 @@ if [ -d "$TEMP_DIR/dotfiles" ]; then
     # Ultimate Fallback
     if ! runuser -u "$TARGET_USER" -- command -v awww &> /dev/null; then
         warn "Awww missing. Switching to Swaybg..."
-        exe pacman -S --noconfirm --needed swaybg
+        # [FIX] -S -> -Syu
+        exe pacman -Syu --noconfirm --needed swaybg
         SCRIPT_PATH="$HOME_DIR/.config/scripts/niri_set_overview_blur_dark_bg.sh"
         if [ -f "$SCRIPT_PATH" ]; then
             sed -i 's/^WALLPAPER_BACKEND="awww"/WALLPAPER_BACKEND="swaybg"/' "$SCRIPT_PATH"
             success "Switched to Swaybg."
         fi
     fi
+else
+    warn "Dotfiles directory missing. Configuration skipped."
 fi
 
 # ------------------------------------------------------------------------------
 # 6. Wallpapers
 # ------------------------------------------------------------------------------
-log "Setting up Wallpapers..."
+section "Step 6/9" "Wallpapers"
 WALL_DEST="$HOME_DIR/Pictures/Wallpapers"
 if [ -d "$TEMP_DIR/wallpapers" ]; then
     exe runuser -u "$TARGET_USER" -- mkdir -p "$WALL_DEST"
     exe runuser -u "$TARGET_USER" -- cp -rf "$TEMP_DIR/wallpapers/." "$WALL_DEST/"
+    success "Wallpapers installed."
 fi
 rm -rf "$TEMP_DIR"
 
 # ------------------------------------------------------------------------------
 # 7. Hardware Tools
 # ------------------------------------------------------------------------------
-log "Configuring Hardware Tools..."
-exe runuser -u "$TARGET_USER" -- yay -S --noconfirm --needed ddcutil-service
+section "Step 7/9" "Hardware Tools"
+
+# [FIX] yay -S -> yay -Syu
+exe runuser -u "$TARGET_USER" -- yay -Syu --noconfirm --needed ddcutil-service
 gpasswd -a "$TARGET_USER" i2c
 
-exe pacman -S --noconfirm --needed swayosd
+# [FIX] -S -> -Syu
+exe pacman -Syu --noconfirm --needed swayosd
 systemctl enable --now swayosd-libinput-backend.service > /dev/null 2>&1
+
+success "Hardware tools configured."
 
 # ------------------------------------------------------------------------------
 # Cleanup
 # ------------------------------------------------------------------------------
-log "Cleaning up..."
+section "Step 9/9" "Cleanup"
+
 rm -f "$SUDO_TEMP_FILE"
 runuser -u "$TARGET_USER" -- git config --global --unset url."https://gitclone.com/github.com/".insteadOf
 sed -i '/GOPROXY=https:\/\/goproxy.cn,direct/d' /etc/environment
@@ -312,10 +375,12 @@ sed -i '/GOPROXY=https:\/\/goproxy.cn,direct/d' /etc/environment
 # ------------------------------------------------------------------------------
 # 10. Auto-Login
 # ------------------------------------------------------------------------------
+section "Final" "Boot Config"
+
 if [ "$SKIP_AUTOLOGIN" = true ]; then
     log "Auto-login skipped (DM active)."
 else
-    log "Configuring Auto-login..."
+    log "Configuring TTY Auto-login..."
     GETTY_DIR="/etc/systemd/system/getty@tty1.service.d"
     mkdir -p "$GETTY_DIR"
     cat <<EOT > "$GETTY_DIR/autologin.conf"
@@ -347,4 +412,4 @@ EOT
     success "Auto-login configured."
 fi
 
-log "Phase 4 Completed."
+log "Module 04 completed."

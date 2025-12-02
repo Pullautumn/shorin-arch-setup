@@ -1,37 +1,43 @@
 #!/bin/bash
 
-# Get script directory to source utils
+# ==============================================================================
+# 01-base.sh - Base System Configuration
+# ==============================================================================
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/00-utils.sh"
 
 check_root
 
-log ">>> Starting Phase 1: Base System Configuration"
+log "Starting Phase 1: Base System Configuration..."
 
 # ------------------------------------------------------------------------------
 # 1. Set Global Default Editor
 # ------------------------------------------------------------------------------
-log "Step 1/5: Configuring global default editor..."
+section "Step 1/5" "Global Default Editor"
 
 TARGET_EDITOR="vim"
 
 if command -v nvim &> /dev/null; then
     TARGET_EDITOR="nvim"
-    log "-> Neovim detected."
+    log "Neovim detected."
 elif command -v nano &> /dev/null; then
     TARGET_EDITOR="nano"
-    log "-> Nano detected."
+    log "Nano detected."
 else
-    log "-> Neovim or Nano not found. Installing Vim..."
+    log "Neovim or Nano not found. Installing Vim..."
     if ! command -v vim &> /dev/null; then
-        pacman -S --noconfirm vim > /dev/null 2>&1
+        exe pacman -Syu --noconfirm vim
     fi
 fi
 
-# Modify /etc/environment
+log "Setting EDITOR=$TARGET_EDITOR in /etc/environment..."
+
 if grep -q "^EDITOR=" /etc/environment; then
-    sed -i "s/^EDITOR=.*/EDITOR=${TARGET_EDITOR}/" /etc/environment
+    exe sed -i "s/^EDITOR=.*/EDITOR=${TARGET_EDITOR}/" /etc/environment
 else
+    # exe handles simple commands, for redirection we wrap in bash -c or just run it
+    # For simplicity in logging, we just run it and log success
     echo "EDITOR=${TARGET_EDITOR}" >> /etc/environment
 fi
 success "Global EDITOR set to: ${TARGET_EDITOR}"
@@ -39,33 +45,38 @@ success "Global EDITOR set to: ${TARGET_EDITOR}"
 # ------------------------------------------------------------------------------
 # 2. Enable 32-bit (multilib) Repository
 # ------------------------------------------------------------------------------
-log "Step 2/5: Checking [multilib] 32-bit repository..."
+section "Step 2/5" "Multilib Repository"
 
 if grep -q "^\[multilib\]" /etc/pacman.conf; then
     success "[multilib] is already enabled."
 else
+    log "Uncommenting [multilib]..."
     # Uncomment [multilib] and the following Include line
-    sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
-    log "-> Uncommented [multilib]. Refreshing pacman database..."
-    pacman -Sy > /dev/null 2>&1
-    success "[multilib] enabled and refreshed."
+    exe sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
+    
+    log "Refreshing database..."
+    exe pacman -Syu
+    success "[multilib] enabled."
 fi
 
 # ------------------------------------------------------------------------------
 # 3. Install Base Fonts
 # ------------------------------------------------------------------------------
-log "Step 3/5: Installing base fonts (wqy-zenhei, noto-fonts, emoji)..."
-pacman -S --noconfirm --needed wqy-zenhei noto-fonts noto-fonts-emoji > /dev/null 2>&1
+section "Step 3/5" "Base Fonts"
+
+log "Installing wqy-zenhei, noto-fonts, emoji..."
+exe pacman -Syu --noconfirm --needed wqy-zenhei noto-fonts noto-fonts-emoji
 success "Base fonts installed."
 
 # ------------------------------------------------------------------------------
 # 4. Configure archlinuxcn Repository
 # ------------------------------------------------------------------------------
-log "Step 4/5: Configuring archlinuxcn repository..."
+section "Step 4/5" "ArchLinuxCN Repository"
 
 if grep -q "\[archlinuxcn\]" /etc/pacman.conf; then
     success "archlinuxcn repository already exists."
 else
+    log "Adding archlinuxcn mirrors to pacman.conf..."
     cat <<EOT >> /etc/pacman.conf
 
 [archlinuxcn]
@@ -74,18 +85,21 @@ Server = https://mirrors.tuna.tsinghua.edu.cn/archlinuxcn/\$arch
 Server = https://mirrors.hit.edu.cn/archlinuxcn/\$arch
 Server = https://repo.huaweicloud.com/archlinuxcn/\$arch
 EOT
-    log "-> Added mirror servers to pacman.conf."
+    success "Mirrors added."
 fi
 
-log "-> Installing archlinuxcn-keyring..."
-pacman -Sy --noconfirm archlinuxcn-keyring > /dev/null 2>&1
-success "archlinuxcn configured successfully."
+log "Installing archlinuxcn-keyring..."
+# Keyring installation often needs -Sy specifically, but -Syu is safe too
+exe pacman -Syu --noconfirm archlinuxcn-keyring
+success "ArchLinuxCN configured."
 
 # ------------------------------------------------------------------------------
 # 5. Install AUR Helpers
 # ------------------------------------------------------------------------------
-log "Step 5/5: Installing AUR helpers (yay & paru)..."
-pacman -S --noconfirm --needed yay paru > /dev/null 2>&1
-success "yay and paru installed."
+section "Step 5/5" "AUR Helpers"
 
-log ">>> Phase 1 completed."
+log "Installing yay and paru..."
+exe pacman -Syu --noconfirm --needed yay paru
+success "Helpers installed."
+
+log "Module 01 completed."

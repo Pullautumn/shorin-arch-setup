@@ -1,98 +1,111 @@
 #!/bin/bash
 
-# Get script directory
+# ==============================================================================
+# 03-user.sh - User Creation & Configuration
+# ==============================================================================
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/00-utils.sh"
 
 check_root
 
-log ">>> Starting Phase 3: User Creation & Configuration"
+log "Starting Phase 3: User Configuration..."
 
 # ------------------------------------------------------------------------------
 # 1. User Detection / Creation Logic
 # ------------------------------------------------------------------------------
-log "Step 1/3: User Account Setup"
+section "Step 1/3" "User Account Setup"
 
-# Attempt to detect existing user with UID 1000 (The first standard user)
+# Attempt to detect existing user with UID 1000
 EXISTING_USER=$(awk -F: '$3 == 1000 {print $1}' /etc/passwd)
 MY_USERNAME=""
 SKIP_CREATION=false
 
 if [ -n "$EXISTING_USER" ]; then
-    log "-> Detected existing user with UID 1000: '$EXISTING_USER'"
-    success "Using existing user: $EXISTING_USER"
+    info_kv "Detected User" "$EXISTING_USER" "(UID 1000)"
+    log "Using existing user configuration."
     MY_USERNAME="$EXISTING_USER"
     SKIP_CREATION=true
 else
-    # No UID 1000 found, enter creation wizard
-    log "-> No standard user found. Starting user creation wizard..."
+    warn "No standard user found (UID 1000)."
     
     while true; do
-        echo -e "${YELLOW}----------------------------------------${NC}"
-        read -p "Please enter the new username: " INPUT_USER
+        read -p "   Please enter new username: " INPUT_USER
         
         if [[ -z "$INPUT_USER" ]]; then
-            warn "Username cannot be empty. Please try again."
+            warn "Username cannot be empty."
             continue
         fi
 
-        # "Regret" option: Confirmation
-        read -p "You entered '$INPUT_USER'. Is this correct? [y/N]: " CONFIRM
+        # Confirmation
+        read -p "   Create user '${BOLD}$INPUT_USER${NC}'? [Y/n] " CONFIRM
+        CONFIRM=${CONFIRM:-Y}
+        
         if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
             MY_USERNAME="$INPUT_USER"
             break
         else
-            log "Cancelled. Please re-enter the username."
+            log "Cancelled. Please re-enter."
         fi
     done
 fi
 
 # ------------------------------------------------------------------------------
-# 2. Create User & Sudo (Only if user didn't exist)
+# 2. Create User & Sudo
 # ------------------------------------------------------------------------------
+section "Step 2/3" "Account & Privileges"
+
 if [ "$SKIP_CREATION" = true ]; then
-    log "Step 2/3: Skipped user creation (User already exists)."
-else
-    log "Step 2/3: Creating user '$MY_USERNAME' and configuring sudo..."
+    log "User already exists. Checking permissions..."
     
-    # 1. Create User
-    if id "$MY_USERNAME" &>/dev/null; then
-        warn "User '$MY_USERNAME' already exists (but not UID 1000?). Skipping add."
+    # Check if user is in wheel group
+    if groups "$MY_USERNAME" | grep -q "\bwheel\b"; then
+        success "User '$MY_USERNAME' is already in 'wheel' group."
     else
-        useradd -m -g wheel "$MY_USERNAME"
-        success "User '$MY_USERNAME' created."
-        
-        log "-> Setting password for '$MY_USERNAME'..."
-        passwd "$MY_USERNAME"
+        log "Adding '$MY_USERNAME' to 'wheel' group..."
+        exe usermod -aG wheel "$MY_USERNAME"
     fi
-
-    # 2. Configure Sudoers
-    log "-> Configuring Sudo privileges..."
-    if grep -q "^# %wheel ALL=(ALL:ALL) ALL" /etc/sudoers; then
-        sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
-        success "Enabled sudo access for %wheel group."
-    elif grep -q "^%wheel ALL=(ALL:ALL) ALL" /etc/sudoers; then
-        success "Sudo access for %wheel group is already enabled."
-    else
-        echo "%wheel ALL=(ALL:ALL) ALL" >> /etc/sudoers
-        success "Appended wheel config to /etc/sudoers."
-    fi
-fi
-
-# ------------------------------------------------------------------------------
-# 3. Generate User Directories (xdg-user-dirs)
-# ------------------------------------------------------------------------------
-log "Step 3/3: Generating user directories (Downloads, Music, etc.)..."
-
-# Install the package first if missing (Safety check)
-pacman -S --noconfirm --needed xdg-user-dirs > /dev/null 2>&1
-
-# Run update as the target user
-if runuser -u "$MY_USERNAME" -- xdg-user-dirs-update; then
-    success "User directories generated for '$MY_USERNAME' in /home/$MY_USERNAME/"
 else
-    warn "Failed to generate directories (This is normal if running in chroot or minimal environment)."
-    warn "They will be created automatically when $MY_USERNAME logs in."
+    log "Creating new user..."
+    exe useradd -m -g wheel "$MY_USERNAME"
+    
+    log "Setting password for $MY_USERNAME..."
+    # passwd is interactive, just run it directly
+    passwd "$MY_USERNAME"
+    
+    if [ $? -eq 0 ]; then
+        success "Password set successfully."
+    else
+        error "Failed to set password."
+    fi
 fi
 
-log ">>> Phase 3 completed."
+# Configure Sudoers
+log "Configuring sudoers for %wheel group..."
+if grep -q "^# %wheel ALL=(ALL:ALL) ALL" /etc/sudoers; then
+    exe sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
+    success "Uncommented %wheel in /etc/sudoers."
+elif grep -q "^%wheel ALL=(ALL:ALL) ALL" /etc/sudoers; then
+    success "Sudo access already enabled."
+else
+    log "Appending %wheel rule to /etc/sudoers..."
+    echo "%wheel ALL=(ALL:ALL) ALL" >> /etc/sudoers
+    success "Sudo access configured."
+fi
+
+# ------------------------------------------------------------------------------
+# 3. Generate User Directories
+# ------------------------------------------------------------------------------
+section "Step 3/3" "User Directories (XDG)"
+
+# [FIX] -S -> -Syu
+exe pacman -Syu --noconfirm --needed xdg-user-dirs
+
+log "Generating directories (Downloads, Music, etc)..."
+if exe runuser -u "$MY_USERNAME" -- xdg-user-dirs-update; then
+    success "Directories created for $MY_USERNAME."
+else
+    warn "Failed to generate directories (Session might be inactive)."
+fi
+
+log "Module 03 completed."

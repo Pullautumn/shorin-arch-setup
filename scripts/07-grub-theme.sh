@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# 07-grub-theme.sh - GRUB Bootloader Theming (Dynamic)
+# 07-grub-theme.sh - GRUB Bootloader Theming (Visual Enhanced & Optional)
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,29 +20,30 @@ log "Detecting theme in 'grub-themes' folder..."
 SOURCE_BASE="$PARENT_DIR/grub-themes"
 DEST_DIR="/boot/grub/themes"
 
-# Check if source base exists
+# Case 1: Repo folder missing
 if [ ! -d "$SOURCE_BASE" ]; then
-    error "Directory 'grub-themes' not found in repo root."
-    exit 1
+    warn "Directory 'grub-themes' not found in repo."
+    warn "Skipping GRUB theme installation (Optional)."
+    exit 0
 fi
 
-# Find the first directory inside grub-themes
-# This allows the user to drop ANY theme folder named anything
+# Case 2: Find first directory
 THEME_SOURCE=$(find "$SOURCE_BASE" -mindepth 1 -maxdepth 1 -type d | head -n 1)
 
 if [ -z "$THEME_SOURCE" ]; then
-    error "No theme folder found inside '$SOURCE_BASE'."
-    warn "Please put a theme folder (containing theme.txt) into 'grub-themes/'."
-    exit 1
+    warn "No theme folder found inside 'grub-themes/'."
+    log "Skipping GRUB theme installation."
+    exit 0
 fi
 
 THEME_NAME=$(basename "$THEME_SOURCE")
-info_kv "Detected Theme" "$THEME_NAME"
+info_kv "Detected" "$THEME_NAME"
 
-# Verify theme structure
+# Case 3: Verify structure
 if [ ! -f "$THEME_SOURCE/theme.txt" ]; then
     error "Invalid theme: 'theme.txt' not found in '$THEME_NAME'."
-    exit 1
+    warn "Skipping to prevent GRUB errors."
+    exit 0
 fi
 
 # ------------------------------------------------------------------------------
@@ -55,13 +56,13 @@ if [ ! -d "$DEST_DIR" ]; then
     exe mkdir -p "$DEST_DIR"
 fi
 
-# Remove old theme if it has the same name to ensure clean update
+# Clean install: Remove old if exists
 if [ -d "$DEST_DIR/$THEME_NAME" ]; then
-    log "Removing existing version of $THEME_NAME..."
+    log "Removing existing version..."
     exe rm -rf "$DEST_DIR/$THEME_NAME"
 fi
 
-# Copy theme
+# Copy
 exe cp -r "$THEME_SOURCE" "$DEST_DIR/"
 
 if [ -f "$DEST_DIR/$THEME_NAME/theme.txt" ]; then
@@ -83,22 +84,21 @@ if [ -f "$GRUB_CONF" ]; then
     # Update or Append GRUB_THEME
     if grep -q "^GRUB_THEME=" "$GRUB_CONF"; then
         log "Updating existing GRUB_THEME entry..."
-        # Use a different delimiter (#) for sed to avoid slashing issues with paths
+        # Use # delimiter to avoid path clashes
         exe sed -i "s|^GRUB_THEME=.*|GRUB_THEME=\"$THEME_PATH\"|" "$GRUB_CONF"
     else
         log "Adding GRUB_THEME entry..."
-        # Append to end of file
         echo "GRUB_THEME=\"$THEME_PATH\"" >> "$GRUB_CONF"
-        success "Added GRUB_THEME variable."
+        success "Entry appended."
     fi
     
     # Enable graphical output (Comment out console output)
     if grep -q "^GRUB_TERMINAL_OUTPUT=\"console\"" "$GRUB_CONF"; then
-        log "Enabling graphical terminal output..."
+        log "Enabling graphical terminal..."
         exe sed -i 's/^GRUB_TERMINAL_OUTPUT="console"/#GRUB_TERMINAL_OUTPUT="console"/' "$GRUB_CONF"
     fi
     
-    # Optional: Ensure GRUB_GFXMODE is set to auto or a high resolution if not set
+    # Ensure GFXMODE is Auto
     if ! grep -q "^GRUB_GFXMODE=" "$GRUB_CONF"; then
         echo 'GRUB_GFXMODE=auto' >> "$GRUB_CONF"
     fi
@@ -114,12 +114,12 @@ fi
 # ------------------------------------------------------------------------------
 log "Generating new GRUB configuration..."
 
-# The output path was fixed in 02-musthave.sh (symlink), so /boot/grub/grub.cfg is safe
+# /boot/grub link fix was handled in 02-musthave.sh, safe to use standard path
 if exe grub-mkconfig -o /boot/grub/grub.cfg; then
     success "GRUB updated successfully."
 else
     error "Failed to update GRUB."
-    # Non-fatal for script execution, but user should know
+    warn "You may need to run 'grub-mkconfig' manually."
 fi
 
 log "Module 07 completed."

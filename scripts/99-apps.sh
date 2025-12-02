@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# 99-apps.sh - Common Applications (Visual Enhanced)
+# 99-apps.sh - Common Applications Installation (Visual Enhanced)
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -93,9 +93,9 @@ if [ ${#YAY_APPS[@]} -gt 0 ]; then
     BATCH_LIST="${YAY_APPS[*]}"
     log "Attempting batch install..."
     
-    # Attempt Batch (Using exe for visual feedback)
-    # exe will print the command and run it
-    exe runuser -u "$TARGET_USER" -- yay -S --noconfirm --needed --answerdiff=None --answerclean=None $BATCH_LIST
+    # Attempt Batch
+    # [FIX] yay -S -> yay -Syu
+    exe runuser -u "$TARGET_USER" -- yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None $BATCH_LIST
     batch_ret=$?
     
     if [ $batch_ret -eq 0 ]; then
@@ -110,7 +110,8 @@ if [ ${#YAY_APPS[@]} -gt 0 ]; then
     if [ $batch_ret -ne 0 ]; then
         for pkg in "${YAY_APPS[@]}"; do
             # Attempt 1
-            if ! exe runuser -u "$TARGET_USER" -- yay -S --noconfirm --needed --answerdiff=None --answerclean=None "$pkg"; then
+            # [FIX] yay -S -> yay -Syu
+            if ! exe runuser -u "$TARGET_USER" -- yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None "$pkg"; then
                 ret=$?
                 if [ $ret -eq 130 ]; then
                     warn "Skipped '$pkg' (User Cancelled)."
@@ -119,7 +120,8 @@ if [ ${#YAY_APPS[@]} -gt 0 ]; then
                 
                 # Retry Attempt 2
                 warn "Retrying '$pkg'..."
-                if ! exe runuser -u "$TARGET_USER" -- yay -S --noconfirm --needed --answerdiff=None --answerclean=None "$pkg"; then
+                # [FIX] yay -S -> yay -Syu
+                if ! exe runuser -u "$TARGET_USER" -- yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None "$pkg"; then
                     ret_retry=$?
                     if [ $ret_retry -eq 130 ]; then
                         warn "Skipped '$pkg' (User Cancelled)."
@@ -145,6 +147,7 @@ if [ ${#FLATPAK_APPS[@]} -gt 0 ]; then
     
     for app in "${FLATPAK_APPS[@]}"; do
         # Attempt 1
+        # [FIX] Wrapped in exe
         if ! exe flatpak install -y flathub "$app"; then
             ret=$?
             if [ $ret -eq 130 ]; then
@@ -156,6 +159,7 @@ if [ ${#FLATPAK_APPS[@]} -gt 0 ]; then
             sleep 3
             
             # Attempt 2
+            # [FIX] Wrapped in exe
             if ! exe flatpak install -y flathub "$app"; then
                 ret_retry=$?
                 if [ $ret_retry -eq 130 ]; then
@@ -203,6 +207,7 @@ NATIVE_DESKTOP="/usr/share/applications/steam.desktop"
 if [ -f "$NATIVE_DESKTOP" ]; then
     log "Checking Native Steam..."
     if ! grep -q "env LANG=zh_CN.UTF-8" "$NATIVE_DESKTOP"; then
+        # [FIX] Wrapped in exe
         exe sed -i 's|^Exec=/usr/bin/steam|Exec=env LANG=zh_CN.UTF-8 /usr/bin/steam|' "$NATIVE_DESKTOP"
         exe sed -i 's|^Exec=steam|Exec=env LANG=zh_CN.UTF-8 steam|' "$NATIVE_DESKTOP"
         success "Patched Native Steam .desktop."
@@ -215,6 +220,7 @@ fi
 # Method 2: Flatpak Steam
 if echo "${FLATPAK_APPS[@]}" | grep -q "com.valvesoftware.Steam" || flatpak list | grep -q "com.valvesoftware.Steam"; then
     log "Checking Flatpak Steam..."
+    # [FIX] Wrapped in exe
     exe flatpak override --env=LANG=zh_CN.UTF-8 com.valvesoftware.Steam
     success "Applied Flatpak Steam override."
     STEAM_desktop_modified=true
