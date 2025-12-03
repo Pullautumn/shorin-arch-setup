@@ -10,62 +10,40 @@ source "$SCRIPT_DIR/00-utils.sh"
 check_root
 
 log ">>> Starting Phase 2: Essential (Must-have) Software & Drivers"
-
 # ------------------------------------------------------------------------------
-# 1. Btrfs & Snapper Configuration
+# 1. Btrfs Extras & GRUB (Config was done in 00-btrfs-init)
 # ------------------------------------------------------------------------------
-section "Step 1/8" "Filesystem & Snapshot Setup"
+section "Step 1/8" "Btrfs Extras & GRUB"
 
 ROOT_FSTYPE=$(findmnt -n -o FSTYPE /)
 
 if [ "$ROOT_FSTYPE" == "btrfs" ]; then
     log "Btrfs filesystem detected."
-    
-    # Install Tools
     exe pacman -Syu --noconfirm --needed snapper snap-pac btrfs-assistant
     success "Snapper tools installed."
 
-    # Initialize Snapper Config
     log "Initializing Snapper 'root' configuration..."
-    
     if ! snapper list-configs | grep -q "^root "; then
         if [ -d "/.snapshots" ]; then
-            warn "Removing existing /.snapshots directory for initialization..."
+            warn "Removing existing /.snapshots..."
             exe_silent umount /.snapshots
             exe_silent rm -rf /.snapshots
         fi
-        
         if exe snapper -c root create-config /; then
-            success "Snapper config 'root' created."
-            
-            log "Applying optimized retention policy..."
-            exe snapper -c root set-config \
-                ALLOW_GROUPS="wheel" \
-                TIMELINE_CREATE="yes" \
-                TIMELINE_CLEANUP="yes" \
-                NUMBER_LIMIT="10" \
-                NUMBER_LIMIT_IMPORTANT="5" \
-                TIMELINE_LIMIT_HOURLY="5" \
-                TIMELINE_LIMIT_DAILY="7" \
-                TIMELINE_LIMIT_WEEKLY="0" \
-                TIMELINE_LIMIT_MONTHLY="0" \
-                TIMELINE_LIMIT_YEARLY="0"
-                
-            success "Retention policy applied."
-        else
-            error "Failed to create Snapper config."
+            success "Snapper config created."
+            log "Applying retention policy..."
+            exe snapper -c root set-config ALLOW_GROUPS="wheel" TIMELINE_CREATE="yes" TIMELINE_CLEANUP="yes" NUMBER_LIMIT="10" NUMBER_LIMIT_IMPORTANT="5" TIMELINE_LIMIT_HOURLY="5" TIMELINE_LIMIT_DAILY="7" TIMELINE_LIMIT_WEEKLY="0" TIMELINE_LIMIT_MONTHLY="0" TIMELINE_LIMIT_YEARLY="0"
+            success "Policy applied."
         fi
     else
-        log "Snapper config 'root' already exists."
+        log "Config exists."
     fi
     
-    # Enable Cleanup Timers
     exe systemctl enable --now snapper-timeline.timer snapper-cleanup.timer
 
     # GRUB Integration
     if [ -d "/boot/grub" ] || [ -f "/etc/default/grub" ]; then
-        log "Checking GRUB directory structure..."
-
+        log "Checking GRUB..."
         if [ -d "/efi/grub" ]; then
             if [ ! -L "/boot/grub" ] || [ "$(readlink -f /boot/grub)" != "/efi/grub" ]; then
                 warn "Fixing /boot/grub symlink..."
@@ -76,8 +54,6 @@ if [ "$ROOT_FSTYPE" == "btrfs" ]; then
                 success "Symlink fix applied."
             fi
         fi
-
-        log "Configuring grub-btrfs..."
         exe pacman -Syu --noconfirm --needed grub-btrfs inotify-tools
         exe systemctl enable --now grub-btrfsd
 

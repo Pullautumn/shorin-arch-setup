@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# Shorin Arch Setup - Main Installer (v4.1)
+# Shorin Arch Setup - Main Installer (v4.0)
 # ==============================================================================
 
 BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -29,14 +29,7 @@ export CN_MIRROR=${CN_MIRROR:-0}
 check_root
 chmod +x "$SCRIPTS_DIR"/*.sh
 
-# --- [NEW] Fix Pacman Lock ---
-# Automatically remove lock file if previous run crashed
-if [ -f /var/lib/pacman/db.lck ]; then
-    echo -e "${H_YELLOW}   [!] Pacman lock file detected. Removing it...${NC}"
-    rm /var/lib/pacman/db.lck
-fi
-
-# --- Banner Functions ---
+# --- ASCII Banners ---
 banner1() {
 cat << "EOF"
    _____ __  ______  ____  _____   __
@@ -49,7 +42,7 @@ EOF
 banner2() {
 cat << "EOF"
   ██████  ██   ██  ██████  ██████  ██ ███    ██ 
-  ██      ██   ██ ██    ██ ██   ██ ██ ████   ██ 
+  ██      ██   ██ ██    ██ ██████  ██ ██ ██  ██ 
   ███████ ███████ ██    ██ ██████  ██ ██ ██  ██ 
        ██ ██   ██ ██    ██ ██   ██ ██ ██  ██ ██ 
   ██████  ██   ██  ██████  ██   ██ ██ ██   ████ 
@@ -77,7 +70,7 @@ show_banner() {
         2) banner3 ;;
     esac
     echo -e "${NC}"
-    echo -e "${DIM}   :: Arch Linux Automation Protocol :: v4.1 ::${NC}"
+    echo -e "${DIM}   :: Arch Linux Automation Protocol :: v4.0 ::${NC}"
     echo ""
 }
 
@@ -149,6 +142,7 @@ sys_dashboard
 
 # Dynamic Module List
 BASE_MODULES=(
+    "00-btrfs-init.sh"  # Critical: Must be first to create snapshot
     "01-base.sh"
     "02-musthave.sh"
     "03-user.sh"
@@ -171,7 +165,7 @@ CURRENT_STEP=0
 log "Initializing installer sequence..."
 sleep 0.5
 
-# --- Reflector Mirror Update ---
+# --- [NEW] Reflector Mirror Update ---
 section "Pre-Flight" "Mirrorlist Optimization"
 log "Checking Reflector..."
 exe pacman -Sy --noconfirm --needed reflector
@@ -220,7 +214,7 @@ else
     success "Mirrorlist optimized."
 fi
 
-# --- Global System Update ---
+# --- Global Update ---
 section "Pre-Flight" "System Synchronization"
 log "Ensuring system is up-to-date..."
 
@@ -255,13 +249,14 @@ for module in "${MODULES[@]}"; do
 
     if [ $exit_code -eq 0 ]; then
         echo "$module" >> "$STATE_FILE"
-    else
+    elif [ $exit_code -eq 130 ]; then
         echo ""
-        echo -e "${H_RED}╔════ CRITICAL FAILURE ════════════════════════════════╗${NC}"
-        echo -e "${H_RED}║ Module '$module' failed with exit code $exit_code.${NC}"
-        echo -e "${H_RED}║ Check log: $TEMP_LOG_FILE${NC}"
-        echo -e "${H_RED}╚══════════════════════════════════════════════════════╝${NC}"
-        write_log "FATAL" "Module $module failed"
+        warn "Script interrupted by user (Ctrl+C)."
+        log "Exiting without rollback. You can resume later."
+        exit 130
+    else
+        write_log "FATAL" "Module $module failed with exit code $exit_code"
+        trigger_emergency_recovery $exit_code
         exit 1
     fi
 done
