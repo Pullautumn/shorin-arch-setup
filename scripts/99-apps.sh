@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# 99-apps.sh - Common Applications (Batch Install + No Retry + Failure Log)
+# 99-apps.sh - Common Applications (Batch Yay + Individual Flatpak + No Retry)
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -77,7 +77,7 @@ if [ -f "$LIST_FILE" ]; then
         fi
     done < "$LIST_FILE"
     
-    info_kv "Queue" "Yay: ${#YAY_APPS[@]}" "Flatpak: ${#FLATPAK_APPS[@]}"
+    info_kv "Total Found" "Yay: ${#YAY_APPS[@]}" "Flatpak: ${#FLATPAK_APPS[@]}"
 else
     warn "File $LIST_FILENAME not found. Skipping."
     trap - INT
@@ -85,92 +85,70 @@ else
 fi
 
 # ------------------------------------------------------------------------------
-# 3. Install Applications (Batch Mode)
+# 3. Install Applications
 # ------------------------------------------------------------------------------
 
-# --- A. Install Yay Apps ---
+# --- A. Install Yay Apps (BATCH MODE) ---
 if [ ${#YAY_APPS[@]} -gt 0 ]; then
-    section "Step 1/2" "System Packages (Yay)"
+    section "Step 1/2" "System Packages (Yay - Batch)"
     
-    # Configure NOPASSWD for seamless batch install
-    SUDO_TEMP_FILE="/etc/sudoers.d/99_shorin_installer_apps"
-    echo "$TARGET_USER ALL=(ALL) NOPASSWD: ALL" > "$SUDO_TEMP_FILE"
-    chmod 440 "$SUDO_TEMP_FILE"
-    
-    BATCH_LIST="${YAY_APPS[*]}"
-    log "Executing batch install for Yay packages..."
-    
-    # Try Batch Install First
-    if exe runuser -u "$TARGET_USER" -- yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None $BATCH_LIST; then
-        success "Yay batch install successful."
-    else
-        warn "Batch install encountered issues. Attempting to install remaining packages individually..."
+    # 1. Filter out already installed packages
+    YAY_INSTALL_QUEUE=()
+    for pkg in "${YAY_APPS[@]}"; do
+        if pacman -Qi "$pkg" &>/dev/null; then
+            log "Skipping '$pkg' (Already installed)."
+        else
+            YAY_INSTALL_QUEUE+=("$pkg")
+        fi
+    done
+
+    # 2. Execute Batch Install if queue is not empty
+    if [ ${#YAY_INSTALL_QUEUE[@]} -gt 0 ]; then
+        # Configure NOPASSWD for seamless batch install
+        SUDO_TEMP_FILE="/etc/sudoers.d/99_shorin_installer_apps"
+        echo "$TARGET_USER ALL=(ALL) NOPASSWD: ALL" > "$SUDO_TEMP_FILE"
+        chmod 440 "$SUDO_TEMP_FILE"
         
-        # Fallback: Install individually to catch failures (NO RETRY on individual fail)
-        for pkg in "${YAY_APPS[@]}"; do
-            # Check if installed first to save time
-            if ! pacman -Qi "$pkg" &>/dev/null; then
-                log "Installing '$pkg'..."
-                if ! exe runuser -u "$TARGET_USER" -- yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None "$pkg"; then
-                    ret=$?
-                    if [ $ret -eq 130 ]; then
-                        warn "Skipped '$pkg' (User Cancelled)."
-                    else
-                        error "Failed to install: $pkg"
-                        FAILED_PACKAGES+=("yay:$pkg")
-                    fi
-                else
-                    success "Installed $pkg"
-                fi
-            else
-                log "Package '$pkg' is already installed."
-            fi
-        done
+        BATCH_LIST="${YAY_INSTALL_QUEUE[*]}"
+        info_kv "Installing" "${#YAY_INSTALL_QUEUE[@]} packages via Yay"
+        
+        # Run Yay Batch
+        if ! exe runuser -u "$TARGET_USER" -- yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None $BATCH_LIST; then
+            error "Yay batch installation failed."
+            # Since it's batch, if it fails, we mark the whole queue as potentially failed
+            for pkg in "${YAY_INSTALL_QUEUE[@]}"; do
+                FAILED_PACKAGES+=("yay-batch-fail:$pkg")
+            done
+        else
+            success "Yay batch installation completed."
+        fi
+        
+        rm -f "$SUDO_TEMP_FILE"
+    else
+        log "All Yay packages are already installed."
     fi
-    
-    rm -f "$SUDO_TEMP_FILE"
 fi
 
-# --- B. Install Flatpak Apps ---
+# --- B. Install Flatpak Apps (INDIVIDUAL MODE) ---
 if [ ${#FLATPAK_APPS[@]} -gt 0 ]; then
-    section "Step 2/2" "Flatpak Packages"
+    section "Step 2/2" "Flatpak Packages (Individual)"
     
-    log "Executing batch install for Flatpak packages..."
-    
-    # Convert array to space-separated string for batch command
-    FLATPAK_BATCH_LIST="${FLATPAK_APPS[*]}"
-    
-    # Execute Batch Install
-    # -y: non-interactive yes
-    if exe flatpak install -y flathub $FLATPAK_BATCH_LIST; then
-        success "Flatpak batch install successful."
-    else
-        warn "Flatpak batch install returned error. Checking for failed packages..."
-        
-        # Check which ones failed
-        for app in "${FLATPAK_APPS[@]}"; do
-            if ! flatpak list --app --columns=application | grep -q "^$app$"; then
-                # Double check installation individually if batch failed (Optional, or just mark as failed)
-                # To strictly follow "no retry", we just mark it as failed if it's not present.
-                # However, usually batch fail means some installed, some didn't. 
-                # Let's try to install the missing ones ONCE individually to be sure it's a real failure 
-                # and not just a side effect of another package failing the batch transaction.
-                
-                log "Retrying individual install for missed app: $app"
-                if ! exe flatpak install -y flathub "$app"; then
-                     ret=$?
-                     if [ $ret -eq 130 ]; then
-                         warn "Skipped '$app' (User Cancelled)."
-                     else
-                         error "Failed to install: $app"
-                         FAILED_PACKAGES+=("flatpak:$app")
-                     fi
-                else
-                     success "Installed $app"
-                fi
-            fi
-        done
-    fi
+    for app in "${FLATPAK_APPS[@]}"; do
+        # 1. Check if installed
+        if flatpak info "$app" &>/dev/null; then
+            log "Skipping '$app' (Already installed)."
+            continue
+        fi
+
+        # 2. Install Individually
+        log "Installing Flatpak: $app ..."
+        if ! exe flatpak install -y flathub "$app"; then
+            error "Failed to install: $app"
+            FAILED_PACKAGES+=("flatpak:$app")
+        else
+            success "Installed $app"
+        fi
+    done
 fi
 
 # ------------------------------------------------------------------------------
@@ -190,7 +168,7 @@ if [ ${#FAILED_PACKAGES[@]} -gt 0 ]; then
     warn "Some applications failed to install. List saved to:"
     echo -e "   ${BOLD}$REPORT_FILE${NC}"
 else
-    success "All applications installed successfully."
+    success "All scheduled applications processed."
 fi
 
 # ------------------------------------------------------------------------------
