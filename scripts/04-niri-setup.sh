@@ -293,10 +293,23 @@ if ! exe runuser -u "$TARGET_USER" -- git clone "$REPO_URL" "$TEMP_DIR"; then
 fi
 
 if [ -d "$TEMP_DIR/dotfiles" ]; then
+    # --- [NEW] Check UID 1000 and remove bookmarks if not shorin ---
+    # 获取 UID 1000 的用户名
+    UID1000_USER=$(id -nu 1000 2>/dev/null)
+    
+    # 如果该用户不是 shorin，则在复制前删除源目录中的 bookmarks
+    if [ "$UID1000_USER" != "shorin" ]; then
+        log "UID 1000 user ($UID1000_USER) is not shorin. Removing gtk bookmarks..."
+        rm -f "$TEMP_DIR/dotfiles/.config/gtk-3.0/bookmarks"
+    fi
+    # ---------------------------------------------------------------
+
     BACKUP_NAME="config_backup_$(date +%s).tar.gz"
     log "Backing up..."
     exe runuser -u "$TARGET_USER" -- tar -czf "$HOME_DIR/$BACKUP_NAME" -C "$HOME_DIR" .config
+    
     log "Applying..."
+    # 此时 bookmarks 文件如果需要被删，已经在上面的步骤中从源头删除了
     exe runuser -u "$TARGET_USER" -- cp -rf "$TEMP_DIR/dotfiles/." "$HOME_DIR/"
     success "Applied."
     
