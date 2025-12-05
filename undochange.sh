@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # ==============================================================================
-# undochange.sh - Emergency System Rollback Tool
+# undochange.sh - Emergency System Rollback Tool (Silent Mode)
 # ==============================================================================
 # Usage: sudo ./undochange.sh
-# Description: Reverts system to the state "Before Shorin Setup"
+# Description: Reverts system to the state "Before Shorin Setup" IMMEDIATELY
 # ==============================================================================
 
 RED='\033[0;31m'
@@ -46,34 +46,7 @@ if snapper list-configs | grep -q "^home "; then
     fi
 fi
 
-# 4. Confirm (Modified Logic)
-echo ""
-echo -e "${RED}WARNING: This will revert ALL changes made to the system since the snapshot.${NC}"
-echo -e "${RED}Any files created or modified after the snapshot will be LOST.${NC}"
-echo ""
-
-while true; do
-    # -r 选项防止反斜杠转义
-    read -p "Are you sure you want to ROLLBACK and REBOOT immediately? (y/n): " -r choice
-    
-    case "$choice" in
-        [yY]|[yY][eE][sS]) 
-            # 用户输入了 y, Y, yes 或 YES，跳出循环继续执行
-            break 
-            ;;
-        [nN]|[nN][oO]) 
-            # 用户输入了 n, N, no 或 NO，退出脚本
-            echo "Operation cancelled."
-            exit 0 
-            ;;
-        *) 
-            # 输入了回车或其他字符
-            echo -e "${YELLOW}Invalid input. Please explicitly type 'y' to confirm or 'n' to cancel.${NC}"
-            ;;
-    esac
-done
-
-echo ""
+# 4. Execute Rollback (No Confirmation)
 
 # Rollback Root
 echo -e "${YELLOW}Reverting / (Root)...${NC}"
