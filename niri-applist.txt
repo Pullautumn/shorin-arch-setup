@@ -1,4 +1,3 @@
-this-package-definitely-does-not-exist-12345
 firefox
 breeze
 breeze-gtk
