@@ -144,7 +144,7 @@ critical_failure_handler() {
     echo ""
 
     while true; do
-        read -p "Execute System Recovery? [Y/n]: " -r choice
+        read -p "Execute System Recovery? [y/n]: " -r choice
         case "$choice" in 
             [yY][eE][sS]|[yY]) 
                 if [ -f "$UNDO_SCRIPT" ]; then
