@@ -43,3 +43,4 @@ AUR:satty-git
 AUR:python-pywalfox
 AUR:waypaper
 AUR:ddcutil-service
+AUR:niriswitcher
