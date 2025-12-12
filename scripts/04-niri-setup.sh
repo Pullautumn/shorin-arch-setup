@@ -232,10 +232,10 @@ if [ -f "$LIST_FILE" ]; then
         # Countdown Logic (The "GRUB Style" Wait)
         # -------------------------------------------------------------
         echo ""
-        echo -e "   ${H_YELLOW}>>> Default installation will start in 120 seconds.${NC}"
+        echo -e "   ${H_YELLOW}>>> Default installation will start in 60 seconds.${NC}"
         echo -e "   ${H_CYAN}>>> Press ANY KEY to customize package selection...${NC}"
         
-        if read -t 120 -n 1 -s -r; then
+        if read -t 60 -n 1 -s -r; then
             # [CASE A] User pressed a key -> Enter FZF
             USER_INTERVENTION=true
         else
@@ -300,12 +300,12 @@ if [ -f "$LIST_FILE" ]; then
             # Timeout Logic (Auto Confirm)
             # -------------------------------------------------------------
             echo "" 
-            log "Timeout reached (120s). Auto-confirming ALL packages."
+            log "Timeout reached. Auto-confirming ALL packages."
             # [FIX] 直接使用我们在开头清洗好的 DEFAULT_LIST
             PACKAGE_ARRAY=("${DEFAULT_LIST[@]}")
         fi
     fi
-    
+
     # === INSTALLATION PHASE (Common for both paths) ===
     if [ ${#PACKAGE_ARRAY[@]} -gt 0 ]; then
         BATCH_LIST=()
