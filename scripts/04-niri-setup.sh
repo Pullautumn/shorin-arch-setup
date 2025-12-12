@@ -197,16 +197,15 @@ log "Configuring temporary sudo access..."
 SUDO_TEMP_FILE="/etc/sudoers.d/99_shorin_installer_temp"
 echo "$TARGET_USER ALL=(ALL) NOPASSWD: ALL" > "$SUDO_TEMP_FILE"
 chmod 440 "$SUDO_TEMP_FILE"
-
 # ==============================================================================
-# STEP 5: Dependencies (Archinstall-style TUI with FZF)
+# STEP 5: Dependencies (Auto-Confirm Timer + Interactive FZF)
 # ==============================================================================
 section "Step 4/9" "Dependencies"
 LIST_FILE="$PARENT_DIR/niri-applist.txt"
 
-# 0. 确保安装了 FZF (实现 TUI 的核心工具)
+# 0. Ensure FZF is installed
 if ! command -v fzf &> /dev/null; then
-    log "Installing dependency: fzf (for advanced menu)..."
+    log "Installing dependency: fzf..."
     pacman -S --noconfirm fzf >/dev/null 2>&1
 fi
 
@@ -217,159 +216,155 @@ verify_installation() {
 }
 
 if [ -f "$LIST_FILE" ]; then
-    log "Launching Archinstall-style Package Selection..."
-    
-# -------------------------------------------------------------
-    # FZF TUI Logic (Clean Layout & Correct Color Syntax)
-    # -------------------------------------------------------------
-    
-    # 1. 进场清屏
-    clear
-    echo -e "\n  Loading package list..."
+    # 1. Pre-load default list (Clean parse for auto-install)
+    # We extract package names (before #) just in case we hit timeout
+    mapfile -t DEFAULT_LIST < <(grep -vE "^\s*#|^\s*$" "$LIST_FILE" | awk -F'#' '{print $1}' | xargs)
 
-    # 2. 启动 FZF
-    # 修正说明: 
-    #   1. 颜色语法改为 header:yellow:bold (冒号分隔)
-    #   2. marker:green:bold
-    #   3. pointer:cyan:bold
-    
-    SELECTED_LINES=$(grep -vE "^\s*#|^\s*$" "$LIST_FILE" | \
-        sed -E 's/[[:space:]]+#/\t#/' | \
-        fzf --multi \
-            --layout=reverse \
-            --border \
-            --margin=1,2 \
-            --prompt="Search Pkg > " \
-            --pointer=">>" \
-            --marker="* " \
-            --delimiter=$'\t' \
-            --with-nth=1 \
-            --bind 'load:select-all' \
-            --bind 'ctrl-a:select-all,ctrl-d:deselect-all' \
-            --info=inline \
-            --header=" [ TAB ] TOGGLE | [ ENTER ] CONFIRM | [ CTRL-D ] DESELECT ALL | [CTRL-A] SELEDCT ALL" \
-            --preview "echo {} | cut -f2 -d$'\t' | sed 's/^# //'" \
-            --preview-window=right:50%:wrap:border-left \
-            --color=dark \
-            --color=fg+:white,bg+:black \
-            --color=hl:blue,hl+:blue:bold \
-            --color=header:yellow:bold \
-            --color=info:magenta \
-            --color=prompt:cyan,pointer:cyan:bold,marker:green:bold \
-            --color=spinner:yellow)
-    
-    # 3. 出场清屏
-    clear
-
-    # Check if user cancelled
-    if [ -z "$SELECTED_LINES" ]; then
-        warn "User cancelled package selection or selected nothing."
+    if [ ${#DEFAULT_LIST[@]} -eq 0 ]; then
+        warn "App list is empty. Skipping."
         PACKAGE_ARRAY=()
     else
-        # 4. 解析结果
-        PACKAGE_ARRAY=()
-        while IFS= read -r line; do
-            # 提取 Tab 键前面的内容
-            pkg_clean=$(echo "$line" | cut -f1 -d$'\t' | xargs)
-            if [ -n "$pkg_clean" ]; then
-                PACKAGE_ARRAY+=("$pkg_clean")
-            fi
-        done <<< "$SELECTED_LINES"
-    fi
-    
-    # -------------------------------------------------------------
-    
-    # -------------------------------------------------------------
-    
-    # Check if user cancelled (Empty output)
-    if [ -z "$SELECTED_LINES" ]; then
-        warn "User cancelled package selection or selected nothing."
-        PACKAGE_ARRAY=()
-    else
-        # 3. 解析结果
-        # fzf 返回的是整行 (例如 "firefox # 浏览器")
-        # 我们需要提取出包名 (空格前的部分)
-        PACKAGE_ARRAY=()
-        while IFS= read -r line; do
-            # 提取 # 前面的部分，并去除两端空格
-            pkg_part="${line%%#*}"
-            pkg_clean=$(echo "$pkg_part" | xargs)
-            if [ -n "$pkg_clean" ]; then
-                PACKAGE_ARRAY+=("$pkg_clean")
-            fi
-        done <<< "$SELECTED_LINES"
-    fi
+        # -------------------------------------------------------------
+        # Countdown Logic (The "GRUB Style" Wait)
+        # -------------------------------------------------------------
+        echo ""
+        echo -e "   ${H_YELLOW}>>> Default installation will start in 120 seconds.${NC}"
+        echo -e "   ${H_CYAN}>>> Press [ANY KEY] to customize package selection...${NC}"
+        
+        # read -t 120: Wait 120s
+        # -n 1: Return after 1 char
+        # -s: Silent input
+        # -r: Raw input
+        # || true ensures script continues even if timeout (exit code 142)
+        if read -t 120 -n 1 -s -r; then
+            # [CASE A] User pressed a key -> Enter FZF
+            USER_INTERVENTION=true
+        else
+            # [CASE B] Timeout -> Auto Install
+            USER_INTERVENTION=false
+        fi
+        
+        if [ "$USER_INTERVENTION" = true ]; then
+            # -------------------------------------------------------------
+            # FZF TUI Logic (Interactive Mode)
+            # -------------------------------------------------------------
+            
+            # 1. Clear screen for immersion
+            clear
+            echo -e "\n  Loading package list..."
 
-    # -------------------------------------------------------------
-    # End TUI Logic
-    # -------------------------------------------------------------
+            # 2. Launch FZF
+            SELECTED_LINES=$(grep -vE "^\s*#|^\s*$" "$LIST_FILE" | \
+                sed -E 's/[[:space:]]+#/\t#/' | \
+                fzf --multi \
+                    --layout=reverse \
+                    --border \
+                    --margin=1,2 \
+                    --prompt="Search Pkg > " \
+                    --pointer=">>" \
+                    --marker="* " \
+                    --delimiter=$'\t' \
+                    --with-nth=1 \
+                    --bind 'load:select-all' \
+                    --bind 'ctrl-a:select-all,ctrl-d:deselect-all' \
+                    --info=inline \
+                    --header="[TAB] TOGGLE | [ENTER] INSTALL | [CTL-D] DE-ALL | [CTL-A] SE-ALL" \
+                    --preview "echo {} | cut -f2 -d$'\t' | sed 's/^# //'" \
+                    --preview-window=right:50%:wrap:border-left \
+                    --color=dark \
+                    --color=fg+:white,bg+:black \
+                    --color=hl:blue,hl+:blue:bold \
+                    --color=header:yellow:bold \
+                    --color=info:magenta \
+                    --color=prompt:cyan,pointer:cyan:bold,marker:green:bold \
+                    --color=spinner:yellow)
+            
+            # 3. Clear screen exit
+            clear
+
+            # 4. Process User Selection
+            if [ -z "$SELECTED_LINES" ]; then
+                warn "User cancelled selection. Installing NOTHING."
+                PACKAGE_ARRAY=()
+            else
+                PACKAGE_ARRAY=()
+                while IFS= read -r line; do
+                    pkg_clean=$(echo "$line" | cut -f1 -d$'\t' | xargs)
+                    [ -n "$pkg_clean" ] && PACKAGE_ARRAY+=("$pkg_clean")
+                done <<< "$SELECTED_LINES"
+            fi
+            
+        else
+            # -------------------------------------------------------------
+            # Timeout Logic (Auto Confirm)
+            # -------------------------------------------------------------
+            echo "" 
+            log "Timeout reached (120s). Auto-confirming ALL packages."
+            PACKAGE_ARRAY=("${DEFAULT_LIST[@]}")
+        fi
+        # -------------------------------------------------------------
+    fi
     
+    # === INSTALLATION PHASE (Common for both paths) ===
     if [ ${#PACKAGE_ARRAY[@]} -gt 0 ]; then
         BATCH_LIST=()
         AUR_LIST=()
 
-        info_kv "Selection" "${#PACKAGE_ARRAY[@]} packages scheduled."
+        info_kv "Target" "${#PACKAGE_ARRAY[@]} packages scheduled."
 
-        # Classification Logic (Unchanged)
         for pkg in "${PACKAGE_ARRAY[@]}"; do
             [ "$pkg" == "imagemagic" ] && pkg="imagemagick"
-            
-            # Check for AUR prefix explicitly or implicit logic
+            # Basic classification logic
             if [[ "$pkg" == "AUR:"* ]]; then
                 clean_pkg="${pkg#AUR:}"
                 AUR_LIST+=("$clean_pkg")
-            elif [[ "$pkg" == *"-git" ]] || [[ "$pkg" == *"-bin" ]]; then
-                # Simple heuristic: usually -git/-bin are AUR, but not always. 
-                # Better to stick to your LIST definition or let yay handle it.
-                # Here we assume your list uses AUR: prefix OR we treat everything as 'yay' target
-                # Yay handles repo vs aur automatically, so separating is mostly for batch speed.
-                
-                # Let's trust yay's auto-detection for simplicity unless specifically prefixed
-                BATCH_LIST+=("$pkg")
             else
                 BATCH_LIST+=("$pkg")
             fi
         done
 
-        # --- Phase 1: Batch Install (Using Yay for everything is often safer for mixing) ---
-        # However, to keep your robust error handling, we verify repo packages first.
-        
+        # 1. Repo Packages (Batch)
         if [ ${#BATCH_LIST[@]} -gt 0 ]; then
-            log "Phase 1: Installing Selected Packages..."
+            log "Phase 1: Installing Repository Packages..."
+            exe runuser -u "$TARGET_USER" -- yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None "${BATCH_LIST[@]}" || true
             
-            # We construct one giant command. Yay handles mixed Repo/AUR gracefully usually.
-            # But adhering to your request for robustness:
-            
-            exe runuser -u "$TARGET_USER" -- yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None "${BATCH_LIST[@]}" "${AUR_LIST[@]}" || true
-            
-            # Verify ALL
-            log "Verifying installation..."
-            ALL_PKGS=("${BATCH_LIST[@]}" "${AUR_LIST[@]}")
-            
-            for pkg in "${ALL_PKGS[@]}"; do
+            # Verify
+            for pkg in "${BATCH_LIST[@]}"; do
                 if ! verify_installation "$pkg"; then
-                    warn "Verification failed for '$pkg'. Retrying individually..."
+                    warn "Verification failed for '$pkg'. Retrying..."
                     exe runuser -u "$TARGET_USER" -- yay -Syu --noconfirm --needed "$pkg" || true
-                    
                     if ! verify_installation "$pkg"; then
-                         # Trigger the Big Red Box
-                        critical_failure_handler "Failed to install '$pkg' after retry."
-                    else
-                        success "Verified: $pkg"
+                         critical_failure_handler "Failed to install '$pkg' (Repo)."
                     fi
                 fi
             done
-            success "Installation phase complete."
         fi
 
-        # Recovery Check
+        # 2. AUR Packages (Sequential)
+        if [ ${#AUR_LIST[@]} -gt 0 ]; then
+            log "Phase 2: Installing AUR Packages..."
+            for aur_pkg in "${AUR_LIST[@]}"; do
+                log "Processing '$aur_pkg'..."
+                runuser -u "$TARGET_USER" -- yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None "$aur_pkg" || true
+                
+                if ! verify_installation "$aur_pkg"; then
+                    warn "Retrying '$aur_pkg'..."
+                    runuser -u "$TARGET_USER" -- yay -Syu --noconfirm --needed "$aur_pkg" || true
+                    if ! verify_installation "$aur_pkg"; then
+                         critical_failure_handler "Failed to install '$aur_pkg' (AUR)."
+                    fi
+                fi
+            done
+        fi
+        
+        # Waybar Check
         if ! command -v waybar &> /dev/null; then
             warn "Waybar missing. Installing stock..."
             exe pacman -Syu --noconfirm --needed waybar
         fi
 
     else
-        warn "No packages selected to install."
+        warn "No packages selected/found."
     fi
 else
     warn "niri-applist.txt not found."
