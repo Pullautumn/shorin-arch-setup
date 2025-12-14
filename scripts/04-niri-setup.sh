@@ -96,8 +96,6 @@ critical_failure_handler() {
 }
 
 # 3. Enable Trap for Unexpected Errors
-# If the script crashes (syntax error, command failed outside of our manual checks),
-# it calls the handler with line number.
 trap 'critical_failure_handler "Script Error at Line $LINENO"' ERR
 
 
@@ -202,7 +200,7 @@ SUDO_TEMP_FILE="/etc/sudoers.d/99_shorin_installer_temp"
 echo "$TARGET_USER ALL=(ALL) NOPASSWD: ALL" > "$SUDO_TEMP_FILE"
 chmod 440 "$SUDO_TEMP_FILE"
 # ==============================================================================
-# STEP 5: Dependencies (Auto-Confirm Timer + Interactive FZF)
+# STEP 5: Dependencies
 # ==============================================================================
 section "Step 4/9" "Dependencies"
 LIST_FILE="$PARENT_DIR/niri-applist.txt"
@@ -220,16 +218,13 @@ verify_installation() {
 }
 
 if [ -f "$LIST_FILE" ]; then
-    # [FIX] 1. Pre-load CLEAN default list
+    # Pre-load CLEAN default list
     mapfile -t DEFAULT_LIST < <(grep -vE "^\s*#|^\s*$" "$LIST_FILE" | sed 's/#.*//; s/AUR://g' | xargs -n1)
 
     if [ ${#DEFAULT_LIST[@]} -eq 0 ]; then
         warn "App list is empty. Skipping."
         PACKAGE_ARRAY=()
     else
-        # -------------------------------------------------------------
-        # Countdown Logic (The "GRUB Style" Wait)
-        # -------------------------------------------------------------
         echo ""
         echo -e "   ${H_YELLOW}>>> Default installation will start in 60 seconds.${NC}"
         echo -e "   ${H_RED}${BOLD}>>> WARNING: AUR packages may fail due to unstable github connection!${NC}"
@@ -237,18 +232,12 @@ if [ -f "$LIST_FILE" ]; then
 
         
         if read -t 60 -n 1 -s -r; then
-            # [CASE A] User pressed a key -> Enter FZF
             USER_INTERVENTION=true
         else
-            # [CASE B] Timeout -> Auto Install
             USER_INTERVENTION=false
         fi
         
         if [ "$USER_INTERVENTION" = true ]; then
-            # -------------------------------------------------------------
-            # FZF TUI Logic (Interactive Mode)
-            # -------------------------------------------------------------
-            
             clear
             echo -e "\n  Loading package list..."
 
@@ -292,9 +281,6 @@ if [ -f "$LIST_FILE" ]; then
             fi
             
         else
-            # -------------------------------------------------------------
-            # Timeout Logic (Auto Confirm)
-            # -------------------------------------------------------------
             echo "" 
             log "Timeout reached. Auto-confirming ALL packages."
             PACKAGE_ARRAY=("${DEFAULT_LIST[@]}")
@@ -397,30 +383,34 @@ if [ -d "$TEMP_DIR/dotfiles" ]; then
     # ==============================================================================
     # 2. FILTER: Remove Excluded Folders (IN TEMP DIR)
     # ==============================================================================
-    EXCLUDE_FILE="$PARENT_DIR/exclude-dotfiles.txt"
-    if [ -f "$EXCLUDE_FILE" ]; then
-        log "Processing exclusion list (cleaning temp source)..."
+    
+    # [MODIFIED] Only exclude files if user is NOT shorin
+    if [ "$TARGET_USER" != "shorin" ]; then
+        EXCLUDE_FILE="$PARENT_DIR/exclude-dotfiles.txt"
         
-        # Clean carriage returns and ignore comments
-        mapfile -t EXCLUDES < <(grep -vE "^\s*#|^\s*$" "$EXCLUDE_FILE" | tr -d '\r')
-        
-        for item in "${EXCLUDES[@]}"; do
-            item=$(echo "$item" | xargs) # Trim spaces
-            [ -z "$item" ] && continue
+        if [ -f "$EXCLUDE_FILE" ]; then
+            log "Processing exclusion list (cleaning temp source)..."
             
-            # Target is inside .config/
-            RM_PATH="$TEMP_DIR/dotfiles/.config/$item"
+            # Clean carriage returns and ignore comments
+            mapfile -t EXCLUDES < <(grep -vE "^\s*#|^\s*$" "$EXCLUDE_FILE" | tr -d '\r')
             
-            if [ -e "$RM_PATH" ]; then
-                log "Excluding (Removing from source): .config/$item"
-                rm -rf "$RM_PATH"
-            else
-                # Debug log if needed, otherwise silent
-                :
-            fi
-        done
+            for item in "${EXCLUDES[@]}"; do
+                item=$(echo "$item" | xargs) # Trim spaces
+                [ -z "$item" ] && continue
+                
+                # Target is inside .config/
+                RM_PATH="$TEMP_DIR/dotfiles/.config/$item"
+                
+                if [ -e "$RM_PATH" ]; then
+                    log "Excluding (Removing from source): .config/$item"
+                    rm -rf "$RM_PATH"
+                fi
+            done
+        else
+            log "No exclusion file found ($EXCLUDE_FILE), skipping exclusion filter."
+        fi
     else
-        log "No exclusion file found ($EXCLUDE_FILE), skipping exclusion filter."
+        log "User is shorin. Skipping exclusion filter."
     fi
 
     # ==============================================================================
@@ -431,7 +421,7 @@ if [ -d "$TEMP_DIR/dotfiles" ]; then
     exe runuser -u "$TARGET_USER" -- tar -czf "$HOME_DIR/$BACKUP_NAME" -C "$HOME_DIR" .config
     
     log "Applying dotfiles to $HOME_DIR..."
-    # Copy all files (exclusions are already gone from source)
+    # Copy all files (exclusions are already gone from source if applied)
     exe runuser -u "$TARGET_USER" -- cp -rf "$TEMP_DIR/dotfiles/." "$HOME_DIR/"
 
     # ==============================================================================
@@ -443,11 +433,9 @@ if [ -d "$TEMP_DIR/dotfiles" ]; then
         log "Non-shorin user detected: Cleaning specific configs..."
         
         # 4.1 Clear content of output.kdl (Empty the file)
-        # Assuming path is .config/niri/output.kdl. Adjust if your output file is elsewhere.
         OUTPUT_KDL="$HOME_DIR/.config/niri/output.kdl"
         if [ -f "$OUTPUT_KDL" ]; then
             log "Clearing monitor configuration content..."
-            # Use truncate to empty file size to 0
             runuser -u "$TARGET_USER" -- truncate -s 0 "$OUTPUT_KDL"
         fi
 
