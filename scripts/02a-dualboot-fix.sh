@@ -86,8 +86,8 @@ fi
 # ------------------------------------------------------------------------------
 section "Step 1/3" "System Analysis"
 
-log "Installing dual-boot detection tools (os-prober, ntfs-3g)..."
-exe pacman -S --noconfirm --needed os-prober ntfs-3g
+log "Installing dual-boot detection tools (os-prober, exfat-utils)..."
+exe pacman -S --noconfirm --needed os-prober exfat-utils
 
 log "Scanning for Windows installation..."
 WINDOWS_DETECTED=$(os-prober | grep -qi "windows" && echo "true" || echo "false")
