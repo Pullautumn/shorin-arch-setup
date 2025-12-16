@@ -152,6 +152,7 @@ BASE_MODULES=(
     "00-btrfs-init.sh"
     "01-base.sh"
     "02-musthave.sh"
+    "02a-dualboot-fix.sh"
     "03-user.sh"
 )
 

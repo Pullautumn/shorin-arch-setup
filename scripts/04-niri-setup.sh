@@ -3,7 +3,7 @@
 # ==============================================================================
 # 04-niri-setup.sh - Niri Desktop (Restored FZF & Robust AUR)
 # ==============================================================================
-# lazygit test
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PARENT_DIR="$(dirname "$SCRIPT_DIR")"
 source "$SCRIPT_DIR/00-utils.sh"
@@ -491,4 +491,3 @@ fi
 
 trap - ERR
 log "Module 04 completed."
-
