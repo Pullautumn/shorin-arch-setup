@@ -183,7 +183,7 @@ if grep -q "^REFLECTOR_DONE$" "$STATE_FILE"; then
 else
     # --- Start Reflector Logic ---
     log "Checking Reflector..."
-    exe pacman -Sy --noconfirm --needed reflector
+    exe pacman -Syu --noconfirm --needed reflector
 
     CURRENT_TZ=$(readlink -f /etc/localtime)
     REFLECTOR_ARGS="-a 24 -f 10 --sort score --save /etc/pacman.d/mirrorlist --verbose"
