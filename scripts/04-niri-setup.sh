@@ -109,6 +109,20 @@ ensure_package_installed() {
   fi
 }
 
+# hide .desktop
+hide_desktop_file() {
+
+  local file="$1"
+
+  if [[ -f "$file" ]] && ! grep -q "^NoDisplay=true$" "$file"; then
+
+    echo "NoDisplay=true" >> "$file"
+
+  fi
+
+}
+
+
 # Ensure whiptail
 if ! command -v whiptail &>/dev/null; then
   log "Installing dependency: whiptail..."
@@ -432,6 +446,18 @@ if [ "$INSTALL_LAZYVIM" = true ]; then
   fi
 fi
 
+log "Hiding useless .desktop files"
+hide_desktop_file "/usr/share/applications/avahi-discover.desktop"
+hide_desktop_file "/usr/share/applications/qv4l2.desktop"
+hide_desktop_file "/usr/share/applications/qvidcap.desktop"
+hide_desktop_file "/usr/share/applications/bssh.desktop"
+hide_desktop_file "/usr/share/applications/org.fcitx.Fcitx5.desktop"
+hide_desktop_file "/usr/share/applications/org.fcitx.fcitx5-migrator.desktop"
+hide_desktop_file "/usr/share/applications/xgps.desktop"
+hide_desktop_file "/usr/share/applications/xgpsspeed.desktop"
+hide_desktop_file "/usr/share/applications/gvim.desktop"
+hide_desktop_file "/usr/share/applications/kbd-layout-viewer5.desktop"
+hide_desktop_file "/usr/share/applications/bvnc.desktop"
 # ==============================================================================
 # STEP 7: Wallpapers
 # ==============================================================================

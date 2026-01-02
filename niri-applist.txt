@@ -28,7 +28,6 @@ waybar                                   # Highly customizable Wayland bar
 # --- Screenshots & Recording ---
 grim                                     # Screenshot utility (Grabs images)
 slurp                                    # Region selector (Works with grim)
-swappy                                   # Screenshot editing tool
 wf-recorder                              # Screen recorder for Wayland
 hyprpicker                               # Color picker for Wayland
 
