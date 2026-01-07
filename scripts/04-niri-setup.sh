@@ -502,6 +502,7 @@ cat <<EOF > "$XUL_STORE"
     }
 }
 EOF
+            chown -R "$TARGET_USER" "$XUL_STORE"
             log "Cleaning up injection..."
             # 5. 清理/还原 user.js
             if [ "$HAS_EXISTING_USER_JS" = true ]; then
