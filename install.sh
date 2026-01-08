@@ -80,7 +80,7 @@ show_banner() {
     echo -e "${DIM}   :: Arch Linux Automation Protocol :: v1.1 ::${NC}"
     echo ""
 }
-
+DankMaterialShell
 # --- Desktop Selection Menu ---
 select_desktop() {
     show_banner
@@ -90,6 +90,7 @@ select_desktop() {
         "No Desktop |none"
         "Shorin's Niri |niri"
         "KDE Plasma |kde"
+        "Quickshell--DankMaterialShell (dms) |dms"
     )
     
     # 2. 绘制菜单 (半开放式风格)
@@ -177,6 +178,9 @@ case "$DESKTOP_ENV" in
         ;;
     kde)
         BASE_MODULES+=("04b-kdeplasma-setup.sh")
+        ;;
+    dms)
+        BASE_MODULES+=("04c-dms-quickshell.sh")
         ;;
     none)
         log "Skipping Desktop Environment installation."
