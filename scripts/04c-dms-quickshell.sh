@@ -64,45 +64,90 @@ if curl -fsSL "$DMS_URL" -o "$INSTALLER_SCRIPT"; then
         warn "DMS installer returned an error code. You may need to install it manually."
     fi
     rm -f "$INSTALLER_SCRIPT"
-
-    SVC_DIR="$HOME_DIR/.config/systemd/user"
-
-    as_user ln -sf "/usr/lib/systemd/user/dms.service" "$SVC_DIR/graphical-session.target.wants/dms.service"
-    
-    SVC_FILE="$SVC_DIR/niri-autostart.service"
-    LINK="$SVC_DIR/default.target.wants/niri-autostart.service"
-
-    if [ "$SKIP_AUTOLOGIN" = true ]; then
-        log "Auto-login skipped."
-        as_user rm -f "$LINK" "$SVC_FILE"
-    else
-        log "Configuring TTY Auto-login..."
-        mkdir -p "/etc/systemd/system/getty@tty1.service.d"
-        echo -e "[Service]\nExecStart=\nExecStart=-/sbin/agetty --noreset --noclear --autologin $TARGET_USER - \${TERM}" >"/etc/systemd/system/getty@tty1.service.d/autologin.conf"
-
-        as_user mkdir -p "$(dirname "$LINK")"
-        cat <<EOT >"$SVC_FILE"
-[Unit]
-Description=Niri Session Autostart
-After=graphical-session-pre.target
-[Service]
-ExecStart=/usr/bin/niri-session
-Restart=on-failure
-[Install]
-WantedBy=default.target
-EOT
-        as_user ln -sf "../niri-autostart.service" "$LINK"
-        chown -R "$TARGET_USER" "$SVC_DIR"
-        success "Enabled."
-    fi
-
 else
     warn "Failed to download DMS installer script from $DMS_URL."
 fi
 
-#auto login 
+# ==============================================================================
+#  autologin
+# ==============================================================================
+section "Config" "autostart"
+
+SVC_DIR="$HOME_DIR/.config/systemd/user"
+SVC_FILE="$SVC_DIR/dms-autostart.service"
+LINK="$SVC_DIR/default.target.wants/dms-autostart.service"
+
+# 确保目录存在
+as_user mkdir -p "$SVC_DIR/default.target.wants"
+# tty自动登录
+if [ "$SKIP_AUTOLOGIN" = false ]; then
+
+    log "Configuring Niri Auto-start (TTY)..."
+    
+    # 1. 配置 TTY 自动登录
+    mkdir -p "/etc/systemd/system/getty@tty1.service.d"
+    echo -e "[Service]\nExecStart=\nExecStart=-/sbin/agetty --noreset --noclear --autologin $TARGET_USER - \${TERM}" >"/etc/systemd/system/getty@tty1.service.d/autologin.conf"
+
+fi
 
 
-#-------fcitx5--------------
+# 如果安装了niri
+if [ "$SKIP_AUTOLOGIN" = false ] && command -v niri &>/dev/null; then
+
+    # 创建dms自动登录服务
+    cat <<EOT >"$SVC_FILE"
+[Unit]
+Description=Niri DMS Session Autostart
+After=graphical-session-pre.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
+[Service]
+ExecStart=/usr/bin/niri-session
+Restart=on-failure
+RestartSec=2
+ExecStartPost=/usr/bin/sleep 0.5
+ExecStartPost=/usr/bin/dms run 
+Environment=XDG_CURRENT_DESKTOP=niri
+Environment=XDG_SESSION_TYPE=wayland
+
+[Install]
+WantedBy=default.target
+
+EOT
+    # 启用服务
+    as_user ln -sf "$SVC_FILE" "$LINK"
+    # 确保权限
+    chown -R "$TARGET_USER" "$SVC_DIR"
+    success "Niri/DMS auto-start enabled with DMS dependency."
+
+# 如果安装了hyprland
+elif [ "$SKIP_AUTOLOGIN" = false ] && command -v hyprland &>/dev/null; then
+
+    cat <<EOT >"$SVC_FILE"
+[Unit]
+Description=Hyprland DMS Session Autostart
+After=graphical-session-pre.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
+[Service]
+ExecStart=/usr/bin/hyprland
+Restart=on-failure
+RestartSec=2
+ExecStartPost=/usr/bin/sleep 0.5
+ExecStartPost=/usr/bin/dms run 
+Environment=XDG_CURRENT_DESKTOP=hyprland
+Environment=XDG_SESSION_TYPE=wayland
+
+[Install]
+WantedBy=default.target
+
+EOT
+    # 启用服务
+    as_user ln -sf "$SVC_FILE" "$LINK"
+    # 确保权限
+    chown -R "$TARGET_USER" "$SVC_DIR"
+    success "Hyprland DMS auto-start enabled with DMS dependency."
+
+fi
 
 log "Module 05 completed."
