@@ -1,12 +1,10 @@
 # 设置主题
 theme = Matugen 
 command = /usr/bin/fish
-#设置隐藏顶栏 title bar
-window-decoration = none
 #设置透明度
-background-opacity=0.8
+background-opacity=0.9
 #设置字体
-font-family= "JetBrains Maple Mono" 
+font-family= "Adwaita Mono" 
 font-size = 15
 #取消关闭时的确认
 confirm-close-surface = false
