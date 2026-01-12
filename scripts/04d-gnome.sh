@@ -207,8 +207,58 @@ EXTENSION_LIST=(
     "rounded-window-corners@fxgn"
 )
 log "Downloading extensions..."
-sudo -u $TARGET_USER dbus-launch gnome-extensions-cli install ${EXTENSION_LIST[@]}
-sudo -u $TARGET_USER dbus-launch gnome-extensions-cli enable ${EXTENSION_LIST[@]}
+sudo -u $TARGET_USER gnome-extensions-cli install ${EXTENSION_LIST[@]} 2>/dev/null
+
+section "Step 5.2" "Enable GNOME Extensions"
+sudo -u "$TARGET_USER" bash <<EOF
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${TARGET_UID}/bus"
+
+    # 定义一个函数来安全地启用扩展 (追加模式)
+    enable_extension() {
+        local uuid="\$1"
+        local current_list=\$(gsettings get org.gnome.shell enabled-extensions)
+        
+        # 检查是否已经在列表中
+        if [[ "\$current_list" == *"\$uuid"* ]]; then
+            echo "   -> Extension \$uuid already enabled."
+        else
+            echo "   -> Enabling extension: \$uuid"
+            # 如果列表为空 (@as [])，直接设置；否则追加
+            if [ "\$current_list" = "@as []" ]; then
+                gsettings set org.gnome.shell enabled-extensions "['\$uuid']"
+            else
+                # 去掉右括号，加逗号和新 uuid，再补回右括号
+                # 注意：gsettings 的列表格式有点严格，这里做简单的字符串拼接
+                new_list="\${current_list%]}, '\$uuid']"
+                gsettings set org.gnome.shell enabled-extensions "\$new_list"
+            fi
+        fi
+    }
+
+    echo "   ➜ Activating extensions..."
+
+    # 在这里列出你所有需要激活的扩展 UUID
+    # (这些 UUID 通常也是你安装扩展时用的名字)
+    
+    enable_extension "user-theme@gnome-shell-extensions.gcampax.github.com"
+    enable_extension "arch-update@RaphaelRochet"
+    enable_extension "aztaskbar@aztaskbar.gitlab.com"
+    enable_extension "blur-my-shell@aunetx"
+    enable_extension "caffeine@patapon.info"
+    enable_extension "clipboard-indicator@tudmotu.com"
+    enable_extension "color-picker@tuberry"
+    enable_extension "desktop-cube@schneegans.github.com"
+    enable_extension "ding@rastersoft.com"
+    enable_extension "fuzzy-application-search@mkhl.codeberg.page"
+    enable_extension "lockkeys@vaina.lt"
+    enable_extension "middleclickclose@paolo.tranquilli.gmail.com"
+    enable_extension "steal-my-focus-window@steal-my-focus-window"
+    enable_extension "tilingshell@ferrarodomenico.com"
+    enable_extension "kimpanel@kde.org"
+    enable_extension "rounded-window-corners@fxgn"
+
+    echo "   ➜ Extensions activation request sent."
+EOF
 
 chown -R $TARGET_USER $HOME_DIR/.local/share/gnome-shell/extensions
 sudo -u "$TARGET_USER" bash <<EOF
