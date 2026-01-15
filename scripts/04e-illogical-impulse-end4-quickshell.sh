@@ -116,7 +116,12 @@ fi
 # 同样检查防止重复添加
 if ! grep -q "fcitx5" "$END4_HYPR_CUS_EXEC" 2>/dev/null; then
     log "Adding Fcitx5 autostart command to execs.conf..."
-    echo 'exec-once = fcitx5 -d' >> "$END4_HYPR_CUS_EXEC"
+
+    cat << EOT >> "$END4_HYPR_CUS_EXEC"
+
+exec-once = fcitx5 -d' 
+
+EOT
 else
     log "Fcitx5 autostart already exists in execs.conf, skipping."
 fi
