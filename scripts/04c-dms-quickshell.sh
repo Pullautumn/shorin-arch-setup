@@ -114,7 +114,7 @@ fi
 # ==============================================================================
 #  fcitx5 configuration and autostart 
 # ==============================================================================
-
+section "Config" "input method"
 
 if [ "$DMS_NIRI_INSTALLED" = true ]; then
 
@@ -159,7 +159,48 @@ EOT
 elif [ "$DMS_HYPR_INSTALLED" = true ]; then
     true
 fi
+# ==============================================================================
+# nautilus
+# ==============================================================================
+section "Config" "file manager"
 
+if [ "$DMS_NIRI_INSTALLED" = true ]; then
+    log "dms niri detected, configuring nautilus"
+    exe pacman -S --noconfirm --needed ffmpegthumbnailer gvfs-smb nautilus-open-any-terminal file-roller gnome-keyring gst-plugins-base gst-plugins-good gst-libav nautilus
+
+# Nautilus Nvidia/Input Fix
+    DESKTOP_FILE="/usr/share/applications/org.gnome.Nautilus.desktop"
+    if [ -f "$DESKTOP_FILE" ]; then
+    GPU_COUNT=$(lspci | grep -E -i "vga|3d" | wc -l)
+    HAS_NVIDIA=$(lspci | grep -E -i "nvidia" | wc -l)
+    ENV_VARS="env GTK_IM_MODULE=fcitx"
+    [ "$GPU_COUNT" -gt 1 ] && [ "$HAS_NVIDIA" -gt 0 ] && ENV_VARS="env GSK_RENDERER=gl GTK_IM_MODULE=fcitx"
+        if ! grep -q "^Exec=$ENV_VARS" "$DESKTOP_FILE"; then
+            exe sed -i "s|^Exec=|Exec=$ENV_VARS |" "$DESKTOP_FILE"
+        fi
+    fi
+
+elif [ "$DMS_HYPR_INSTALLED" = true ]; then
+    log "dms hyprland detected, skipping file manager "
+fi
+
+# ==============================================================================
+#  screenshare
+# ==============================================================================
+section "Config" "screenshare"
+
+if [ "$DMS_NIRI_INSTALLED" = true ]; then
+    log "dms niri detected, configuring xdg-desktop-portal"
+    exe pacman -S --noconfirm --needed xdg-desktop-portal-gnome
+    
+    if ! grep -q 'xdg-desktop-portal' $DMS_NIRI_CONFIG_FILE; then
+    log "configuring environment in niri config.kdl"
+    echo 'spawn-sh-at-startup "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=niri & /usr/lib/xdg-desktop-portal-gnome"' >> $DMS_NIRI_CONFIG_FILE
+    fi
+
+elif [ "$DMS_HYPR_INSTALLED" = true ]; then
+    true
+fi
 
 # ==============================================================================
 #  tty autologin
