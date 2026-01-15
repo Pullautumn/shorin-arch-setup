@@ -98,7 +98,7 @@ if [ $DMS_NIRI_INSTALLED = true ]; then
 
     if ! grep -E -q "^[[:space:]]*spawn-at-startup.*dms.*run" "$HOME_DIR/.config/niri/config.kdl"; then
         log "enabling dms autostart in niri config.kdl..." 
-        echo 'spawn-at-startup "dmr" "run"' >> "$HOME_DIR/.config/niri/config.kdl"
+        echo 'spawn-at-startup "dms" "run"' >> "$HOME_DIR/.config/niri/config.kdl"
     else
         log "dms autostart already exists in niri config.kdl, skipping."
     fi
