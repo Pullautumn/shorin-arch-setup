@@ -5,7 +5,8 @@ wine                                     # run windows exe
 virt-manager                             # KVM qemu virtula machine
 yazi                                     # great tui file manager
 btop                                     # great tui mission center / system info
-
+fcitx5-mozc                              # Japanese Input Method
+nm-connection-editor                     # Advanced network editor
 # --- Gaming & Media ---
 steam                                    # Gaming Platform (Valve)
 lutris                                   # Gaming outside steam
