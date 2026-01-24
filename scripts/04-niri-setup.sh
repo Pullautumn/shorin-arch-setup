@@ -360,26 +360,64 @@ link_recursive() {
 
 # 1. 准备仓库
 prepare_repository() {
+  # 1. 定义白名单：只下载这两个文件夹，仓库里其他东西（如 NixOS 配置）全扔掉
+  local TARGET_DIRS=("dotfiles" "wallpapers")
+  local BRANCH="main"  # 你的默认分支名，如果是 master 请修改这里
+
+  # --- 场景 A: 仓库已存在 (更新) ---
   if [ -d "$DOTFILES_REPO/.git" ]; then
-    log "Repository exists. Updating..."
-    if ! as_user git -C "$DOTFILES_REPO" pull --ff-only; then
-      warn "Update failed. Resetting repository..."
+    log "Repository exists. Updating (Shallow + Sparse)..."
+    
+    # 强制重置 sparse-checkout 白名单 (防止你以后改了脚本，旧环境没同步)
+    as_user git -C "$DOTFILES_REPO" config core.sparseCheckout true
+    local sparse_file="$DOTFILES_REPO/.git/info/sparse-checkout"
+    as_user truncate -s 0 "$sparse_file"
+    for item in "${TARGET_DIRS[@]}"; do
+      echo "$item" | as_user tee -a "$sparse_file" >/dev/null
+    done
+
+    # 这里的 --depth 1 确保更新时也不下载历史记录，保持轻量
+    if ! as_user git -C "$DOTFILES_REPO" pull --depth 1 --ff-only origin "$BRANCH"; then
+      warn "Update failed (Generic). Resetting repository..."
       rm -rf "$DOTFILES_REPO"
+      # 失败后会自动落入下面的“初始化”逻辑重新下载
     else
       success "Repository updated."
       return 0
     fi
   fi
 
-  log "Cloning configuration to $DOTFILES_REPO..."
-  # 确保父目录存在
-  as_user mkdir -p "$(dirname "$DOTFILES_REPO")"
-  
-  if ! as_user git clone "$REPO_GITHUB" "$DOTFILES_REPO"; then
-    warn "GitHub failed. Trying Gitee..."
-    rm -rf "$DOTFILES_REPO"
-    if ! as_user git clone "$REPO_GITEE" "$DOTFILES_REPO"; then
-      critical_failure_handler "Failed to clone dotfiles from any source."
+  # --- 场景 B: 仓库不存在 (初始化) ---
+  if [ ! -d "$DOTFILES_REPO" ]; then
+    log "Initializing Sparse & Shallow Checkout to $DOTFILES_REPO..."
+    as_user mkdir -p "$DOTFILES_REPO"
+    
+    # 1. 初始化空仓库
+    as_user git -C "$DOTFILES_REPO" init
+    
+    # 2. 开启稀疏检出并写入白名单
+    as_user git -C "$DOTFILES_REPO" config core.sparseCheckout true
+    local sparse_file="$DOTFILES_REPO/.git/info/sparse-checkout"
+    for item in "${TARGET_DIRS[@]}"; do
+      echo "$item" | as_user tee -a "$sparse_file" >/dev/null
+    done
+    
+    # 3. 添加远程源
+    as_user git -C "$DOTFILES_REPO" remote add origin "$REPO_GITHUB"
+    
+    # 4. 拉取：这里关键是 --depth 1 (只取最新) 和 origin main (明确分支)
+    log "Downloading latest snapshot (Github)..."
+    if ! as_user git -C "$DOTFILES_REPO" pull --depth 1 origin "$BRANCH"; then
+      warn "GitHub failed. Switching to Gitee..."
+      
+      # 失败切换源
+      as_user git -C "$DOTFILES_REPO" remote set-url origin "$REPO_GITEE"
+      
+      log "Downloading latest snapshot (Gitee)..."
+      if ! as_user git -C "$DOTFILES_REPO" pull --depth 1 origin "$BRANCH"; then
+        rm -rf "$DOTFILES_REPO"
+        critical_failure_handler "Failed to download dotfiles (Sparse+Shallow failed)."
+      fi
     fi
   fi
 }
