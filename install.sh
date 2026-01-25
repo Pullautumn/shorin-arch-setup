@@ -428,16 +428,18 @@ exe pacman -Sc --noconfirm
 clean_intermediate_snapshots "root"
 clean_intermediate_snapshots "home"
 
+
+# Detect user ID 1000 or prompt manually
+DETECTED_USER=$(awk -F: '$3 == 1000 {print $1}' /etc/passwd)
+TARGET_USER="${DETECTED_USER:-$(read -p "Target user: " u && echo $u)}"
+HOME_DIR="/home/$TARGET_USER"
 # --- 3. Remove Installer Files ---
 if [ -d "/root/shorin-arch-setup" ]; then
     log "Removing installer from /root..."
     cd /
     rm -rfv /root/shorin-arch-setup
-else
-    log "Repo cleanup skipped (not in /root/shorin-arch-setup)."
-    log "If you cloned this manually, please remove the folder yourself."
 fi
-# --- 3. Remove Installer Files ---
+
 if [ -d "$HOME_DIR/shorin-arch-setup" ]; then
     log "Removing installer from $HOME_DIR/shorin-arch-setup"
     rm -rfv $HOME_DIR/shorin-arch-setup
