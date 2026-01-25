@@ -447,12 +447,6 @@ else
     log "Repo cleanup skipped."
     log "please remove the folder yourself."
 fi
-#--- 清理包缓存 ---
-if as_user yay -Scc --noconfirm; then
-    log "yay cache cleaned."
-else
-    warn "yay cache clean process failed."
-fi
 
 #--- 清理无用的下载残留
 for dir in /var/cache/pacman/pkg/download-*/; do
