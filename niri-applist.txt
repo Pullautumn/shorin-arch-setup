@@ -39,7 +39,7 @@ eza                                      # Modern replacement for ls
 thefuck                                  # Magnificent app which corrects your previous console command
 jq                                       # Command-line JSON processor
 imagemagick                              # Image manipulation tools
-
+timg                                     # view image in terminal
 # --- Hardware & Audio ---
 brightnessctl                            # Device brightness control
 cava                                     # Console-based Audio Visualizer
