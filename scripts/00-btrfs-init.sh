@@ -36,15 +36,19 @@ if [ "$ROOT_FSTYPE" == "btrfs" ]; then
             # Apply Retention Policy
             exe snapper -c root set-config \
                 ALLOW_GROUPS="wheel" \
-                TIMELINE_CREATE="no" \
+                TIMELINE_CREATE="yes" \
                 TIMELINE_CLEANUP="yes" \
-                NUMBER_LIMIT="20" \
+                NUMBER_LIMIT="10" \
+                NUMBER_MIN_AGE="0" \
                 NUMBER_LIMIT_IMPORTANT="5" \
-                TIMELINE_LIMIT_HOURLY="5" \
-                TIMELINE_LIMIT_DAILY="7" \
+                TIMELINE_LIMIT_HOURLY="3" \
+                TIMELINE_LIMIT_DAILY="0" \
                 TIMELINE_LIMIT_WEEKLY="0" \
                 TIMELINE_LIMIT_MONTHLY="0" \
                 TIMELINE_LIMIT_YEARLY="0"
+
+            exe systemctl enable snapper-cleanup.timer
+            exe systemctl enable snapper-timeline.timer
         fi
     else
         log "Config 'root' already exists."
@@ -75,12 +79,13 @@ if findmnt -n -o FSTYPE /home | grep -q "btrfs"; then
             # Apply same policy to home
             exe snapper -c home set-config \
                 ALLOW_GROUPS="wheel" \
-                TIMELINE_CREATE="no" \
+                TIMELINE_CREATE="yes" \
                 TIMELINE_CLEANUP="yes" \
-                NUMBER_LIMIT="20" \
+                NUMBER_MIN_AGE="0" \
+                NUMBER_LIMIT="10" \
                 NUMBER_LIMIT_IMPORTANT="5" \
-                TIMELINE_LIMIT_HOURLY="5" \
-                TIMELINE_LIMIT_DAILY="7" \
+                TIMELINE_LIMIT_HOURLY="3" \
+                TIMELINE_LIMIT_DAILY="0" \
                 TIMELINE_LIMIT_WEEKLY="0" \
                 TIMELINE_LIMIT_MONTHLY="0" \
                 TIMELINE_LIMIT_YEARLY="0"

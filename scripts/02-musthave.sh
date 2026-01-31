@@ -19,27 +19,8 @@ ROOT_FSTYPE=$(findmnt -n -o FSTYPE /)
 
 if [ "$ROOT_FSTYPE" == "btrfs" ]; then
     log "Btrfs filesystem detected."
-    exe pacman -S --noconfirm --needed snapper snap-pac btrfs-assistant
+    exe pacman -S --noconfirm --needed snapper btrfs-assistant
     success "Snapper tools installed."
-
-    log "Initializing Snapper 'root' configuration..."
-    if ! snapper list-configs | grep -q "^root "; then
-        if [ -d "/.snapshots" ]; then
-            warn "Removing existing /.snapshots..."
-            exe_silent umount /.snapshots
-            exe_silent rm -rf /.snapshots
-        fi
-        if exe snapper -c root create-config /; then
-            success "Snapper config created."
-            log "Applying retention policy..."
-            exe snapper -c root set-config ALLOW_GROUPS="wheel" TIMELINE_CREATE="no" TIMELINE_CLEANUP="yes" NUMBER_LIMIT="10" NUMBER_LIMIT_IMPORTANT="5" TIMELINE_LIMIT_HOURLY="5" TIMELINE_LIMIT_DAILY="7" TIMELINE_LIMIT_WEEKLY="0" TIMELINE_LIMIT_MONTHLY="0" TIMELINE_LIMIT_YEARLY="0"
-            success "Policy applied."
-        fi
-    else
-        log "Config exists."
-    fi
-    
-    exe systemctl enable --now snapper-timeline.timer snapper-cleanup.timer
 
     # GRUB Integration
 if [ -f "/etc/default/grub" ] && command -v grub-mkconfig >/dev/null 2>&1; then
