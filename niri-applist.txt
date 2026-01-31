@@ -26,7 +26,7 @@ slurp                                    # Region selector (Works with grim)
 wf-recorder                              # Screen recorder for Wayland
 hyprpicker                               # Color picker for Wayland
 satty                                   # Modern screenshot annotation tool
-
+wlsunset                                 # take care of your eyes
 # --- Clipboard ---
 wl-clipboard                             # Command-line copy/paste utilities
 cliphist                                 # Clipboard history manager
