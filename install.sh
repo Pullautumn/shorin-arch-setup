@@ -264,7 +264,7 @@ else
             fi
         else
             warn "Could not detect country. Running global speed test..."
-            exe reflector $REFLECTOR_ARGS
+            exe reflector $REFLECTOR_ARGS --latest 10
         fi
         success "Mirrorlist optimized."
     fi
