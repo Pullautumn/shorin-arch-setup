@@ -226,7 +226,7 @@ else
     exe pacman -S --noconfirm --needed reflector
 
     CURRENT_TZ=$(readlink -f /etc/localtime)
-    REFLECTOR_ARGS="--protocol https -a 24 -f 10 --sort score --save /etc/pacman.d/mirrorlist --verbose"
+    REFLECTOR_ARGS="--protocol https -a 12 -f 10 --sort rate --save /etc/pacman.d/mirrorlist --verbose"
 
     if [[ "$CURRENT_TZ" == *"Shanghai"* ]]; then
         echo ""
