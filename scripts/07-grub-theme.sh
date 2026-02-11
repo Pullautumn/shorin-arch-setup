@@ -64,9 +64,24 @@ manage_kernel_param() {
 # ------------------------------------------------------------------------------
 section "Step 1/5" "General GRUB Settings"
 
-log "Enabling GRUB to remember the last selected entry..."
-set_grub_value "GRUB_DEFAULT" "saved"
-set_grub_value "GRUB_SAVEDEFAULT" "true"
+# 如果/boot/grub是符号链接，检查它是否指向ESP路径
+if [ -L "/boot/grub" ]; then
+    
+    LINK_TARGET=$(readlink -f "/boot/grub")
+    
+    # 是指向ESP路径的话，启用savedefault功能
+    if [[ "$LINK_TARGET" == "/efi/grub" ]] || [[ "$LINK_TARGET" == "/boot/efi/grub" ]]; then
+        log "Detected /boot/grub linked to ESP ($LINK_TARGET). Enabling GRUB savedefault..."
+        set_grub_value "GRUB_DEFAULT" "saved"
+        set_grub_value "GRUB_SAVEDEFAULT" "true"
+    else
+    # 否则跳过savedefault设置
+        log "Skipping savedefault: /boot/grub links to $LINK_TARGET (not /efi/grub or /boot/efi/grub)."
+    fi
+else
+# /boot/grub不是符号链接，跳过savedefault设置
+    log "Skipping savedefault: /boot/grub is not a symbolic link."
+fi
 
 log "Configuring kernel boot parameters for detailed logs and performance..."
 manage_kernel_param "remove" "quiet"
