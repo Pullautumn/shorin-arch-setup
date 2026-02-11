@@ -476,17 +476,6 @@ else
   warn "Dotfiles missing in repo directory."
 fi
 
-# run clipboard sync service
-
-if [ -f /usr/lib/systemd/user/clipsync.service ]; then
-  log "Enabling ClipSync service..."
-  as_user mkdir -p "$HOME_DIR/.config/systemd/user/graphical-session.target.wants"
-  as_user ln -sf /usr/lib/systemd/user/clipsync.service "$HOME_DIR/.config/systemd/user/graphical-session.target.wants/clipsync.service"
-  success "ClipSync enabled."
-else
-  warn "ClipSync service file missing."
-fi
-
 # ==============================================================================
 # STEP 7: Wallpapers
 # ==============================================================================
