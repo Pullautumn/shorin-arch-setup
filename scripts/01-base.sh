@@ -130,7 +130,7 @@ if pacman -Qi networkmanager &> /dev/null; then
     log "NetworkManager detected. Proceeding with iwd backend configuration..."
 
     log "Installing iwd..."
-    exe pacman -S --noconfirm --needed iwd
+    exe pacman -S --noconfirm --needed iwd impala
 
     log "Configuring NetworkManager to use iwd backend..."
 
