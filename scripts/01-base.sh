@@ -131,6 +131,7 @@ if pacman -Qi networkmanager &> /dev/null; then
 
     log "Configuring NetworkManager to use iwd backend..."
     exe pacman -S --noconfirm --needed iwd impala
+    exe systemctl enable iwd
     # Ensure directory exists
     if [ ! -d /etc/NetworkManager/conf.d ]; then
         mkdir -p /etc/NetworkManager/conf.d
