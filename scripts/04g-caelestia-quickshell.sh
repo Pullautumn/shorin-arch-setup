@@ -117,8 +117,8 @@ if [ -f "$HYPR_CONFIG" ]; then
         log "Injecting Fcitx5 config into Hyprland..."
         echo "exec-once = fcitx5 -d" >> "$HYPR_CONFIG"
         echo "env = LC_CTYPE, en_US.UTF-8" >> "$HYPR_CONFIG"
-        cp -rf $PARENT_DIR/quickshell-dotfiles/fcitx5 $HOME_DIR/.config/
-        chown -R $TARGET_USER $HOME_DIR/.config/fcitx5
+        chown -R "$TARGET_USER:" "$PARENT_DIR/quickshell-dotfiles"
+        as_user cp -rf "$PARENT_DIR/quickshell-dotfiles/." "$HOME_DIR/"
     fi
 
     # 5.2 Chinese Locale Check
