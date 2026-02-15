@@ -457,10 +457,6 @@ for dir in /var/cache/pacman/pkg/download-*/; do
     fi
 done
 
-if pacman -Qi networkmanager &> /dev/null; then
-    systemctl restart NetworkManager
-fi
-
 # --- 4. Final GRUB Update ---
 log "Regenerating final GRUB configuration..."
 exe env LANG=en_US.UTF-8 grub-mkconfig -o /boot/grub/grub.cfg
