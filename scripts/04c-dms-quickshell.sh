@@ -313,4 +313,78 @@ EOT
 
 fi
 
+# ============================================================================
+#   shorin 自定义
+# ============================================================================
+
+
+if [ "$SHORIN_DMS" != "1" ]; then
+    log "Shorin DMS not selected, skipping custom configurations."
+    exit 0
+fi
+
+#--------------sudo temp file 临时sudo--------------------#
+SUDO_TEMP_FILE="/etc/sudoers.d/99_shorin_installer_temp"
+echo "$TARGET_USER ALL=(ALL) NOPASSWD: ALL" >"$SUDO_TEMP_FILE"
+chmod 440 "$SUDO_TEMP_FILE"
+log "Temp sudo file created..."
+
+# 定义清理函数：无论脚本是成功结束还是意外中断(Ctrl+C)，都确保删除免密文件
+cleanup_sudo() {
+    if [ -f "$SUDO_TEMP_FILE" ]; then
+        rm -f "$SUDO_TEMP_FILE"
+        log "Security: Temporary sudo privileges revoked."
+    fi
+}
+# 注册陷阱：在脚本退出(EXIT)或被中断(INT/TERM)时触发清理
+trap cleanup_sudo EXIT INT TERM
+
+# 定义 DMS 配置文件目录
+DMS_DOTFILES_DIR="$PARENT_DIR/dms-dotfiles"
+
+# === 自定义fish和kitty配置 ===
+
+if command -v kitty &>/dev/null; then
+    section "Shorin DMS" "terminal and shell"
+    log "Applying Shorin DMS custom configurations for Terminal..."
+    # 安装依赖
+    exe pacman -S --noconfirm --needed eza zoxide starship jq
+    # 复制终端配置
+    log "Copying Terminal configuration..."
+    chown -R "$TARGET_USER:" "$DMS_DOTFILES_DIR"
+    as_user mkdir -p "$HOME_DIR/.config"
+    exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/fish" "$HOME_DIR/.config/"
+    exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/kitty" "$HOME_DIR/.config/"
+    exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/starship.toml" "$HOME_DIR/.config/"
+    # 复制自定义脚本
+    as_user mkdir -p "$HOME_DIR/.local/bin"
+    exe as_user cp -rf "$DMS_DOTFILES_DIR/.local/bin/*" "$HOME_DIR/.local/bin/"
+
+else
+    log "Kitty not found, skipping Kitty configuration."
+fi
+
+# === matugen 配置  ===
+section "Shorin DMS" "matugen"
+log "Configuring Matugen for Shorin DMS..."
+# === 安装依赖 ===
+exe as_user yay -S --noconfirm --needed matugen python-pywalfox
+
+# === 复制配置文件 === 
+# matugen
+exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/matugen" "$HOME_DIR/.config/"
+# btop
+exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/btop" "$HOME_DIR/.config/"
+# cava 
+exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/cava" "$HOME_DIR/.config/"
+# yazi
+exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/yazi" "$HOME_DIR/.config/"
+
+
+# === font configuration  ===
+section "Shorin DMS" "fonts"
+log "Configuring fonts for Shorin DMS..."
+exe as_user yay -S --noconfirm --needed ttf-jetbrains-maple-mono-nf-xx-xx
+exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/fontconfig" "$HOME_DIR/.config/"
+
 log "Module 05 completed."

@@ -89,6 +89,7 @@ select_desktop() {
     local OPTIONS=(
         "No Desktop |none"
         "Shorin's Niri |niri"
+        "Shorin's DMS |shorindms"
         "KDE Plasma |kde"
         "GNOME |gnome"
         "Quickshell: End4--illogical-impulse (Hyprland)|end4"
@@ -187,6 +188,10 @@ case "$DESKTOP_ENV" in
         ;;
     dms)
         BASE_MODULES+=("04c-dms-quickshell.sh")
+        ;;
+    shorindms)
+        BASE_MODULES+=("04c-dms-quickshell.sh")
+        export SHORIN_DMS=1
         ;;
     caelestia)
         BASE_MODULES+=("04g-caelestia-quickshell.sh")
