@@ -1,11 +1,14 @@
-有一些设置需要手动完成
+有一些必要设置需要手动完成
+
+super+T打开终端，super+Q关闭窗口，super+E打开文档管理器，super+alt+A截图。
+所有的键位可以看.config/niri目录以及子目录下的binds.kdl文件。
 
 1【overview壁纸】
+super+Z打开程序菜单，打开dms设置。进入“个性化-->壁纸”，设置一张壁纸。我在Wallpapers里存放了一张，可以直接使用。然后开启“带模糊效果的壁纸复本”，这是overview的模糊壁纸，super+G或者super+O打开overview就可以看到。
 
-打开dms的设置，进入
+2【颜色更随壁纸变化】【gtk主题和qt主题】
+选择“主题与配色”，点击auto，然后选择一个自己喜欢的配色方案。然后到该页面底端，点击“应用GTK配色”，然后重启电脑，或者super+shift+E退出niri后重新打开niri。
 
-2【颜色更随壁纸变化】
 
-3【gtk主题和qt主题】
 
 

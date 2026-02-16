@@ -387,6 +387,7 @@ if ! grep -q 'include "shorin-niri/binds.kdl"' "$DMS_NIRI_CONFIG_FILE"; then
     echo 'include "shorin-niri/binds.kdl"' >> "$DMS_NIRI_CONFIG_FILE"
     echo 'include "shorin-niri/rule.kdl"' >> "$DMS_NIRI_CONFIG_FILE"
     echo 'include "shorin-niri/supertab.kdl"' >> "$DMS_NIRI_CONFIG_FILE"
+    sed -i '/Mod+Tab repeat=false { toggle-overview; }/d' "$HOME_DIR/.config/niri/dms/binds.kdl"
 fi
 
 # === 光标配置 ===
@@ -421,7 +422,7 @@ if command -v kitty &>/dev/null; then
     section "Shorin DMS" "terminal and shell"
     log "Applying Shorin DMS custom configurations for Terminal..."
     # 安装依赖
-    exe pacman -S --noconfirm --needed eza zoxide starship jq fish libnotify
+    exe pacman -S --noconfirm --needed eza zoxide starship jq fish libnotify timg
     # 复制终端配置
     log "Copying Terminal configuration..."
     chown -R "$TARGET_USER:" "$DMS_DOTFILES_DIR"
@@ -437,11 +438,20 @@ else
     log "Kitty not found, skipping Kitty configuration."
 fi
 
+# === mimeapps配置 ===
+section "Shorin DMS" "mimeapps"
+exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/mimeapps.list" "$HOME_DIR/.config/"
+
+# === vim 配置 ===
+section "Shorin DMS" "vim"
+log "Configuring Vim for Shorin DMS..."
+exe as_user cp -rf "$DMS_DOTFILES_DIR/.vimrc" "$HOME_DIR/"
+
 # === matugen 配置  ===
 section "Shorin DMS" "matugen"
 log "Configuring Matugen for Shorin DMS..."
 # 安装依赖
-exe as_user yay -S --noconfirm --needed matugen python-pywalfox firefox adw-gtk-theme
+exe as_user yay -S --noconfirm --needed matugen python-pywalfox firefox adw-gtk-theme 
 # 复制配置文件
 # matugen
 exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/matugen" "$HOME_DIR/.config/"
@@ -495,5 +505,10 @@ log "Configuring fonts for Shorin DMS..."
 exe as_user yay -S --noconfirm --needed ttf-jetbrains-maple-mono-nf-xx-xx
 # 复制fontconfig
 exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/fontconfig" "$HOME_DIR/.config/"
+
+# === 教程文件 ===
+section "Shorin DMS" "tutorial"
+log "Copying tutorial files for Shorin DMS..."
+exe as_user cp -rf "$PARENT_DIR/resources/必看-Shorin-DMS-Niri使用方法.txt" "$HOME_DIR"
 
 log "Module 05 completed."
