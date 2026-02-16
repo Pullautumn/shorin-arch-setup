@@ -356,6 +356,11 @@ if command -v niri &>/dev/null; then
     log "Niri detected, installing Thunar and related plugins..."
     exe as_user yay -S --noconfirm --needed xdg-desktop-portal-gtk thunar tumbler ffmpegthumbnailer poppler-glib gvfs-smb file-roller thunar-archive-plugin gnome-keyring thunar-volman gvfs-mtp gvfs-gphoto2 webp-pixbuf-loader libgsf
 fi
+exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/Thunar" "$HOME_DIR/.config/"
+exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/xfce4" "$HOME_DIR/.config/"
+# bookmarks侧边栏书签
+exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/gtk-3.0" "$HOME_DIR/.config/"
+as_user sed -i "s/shorin/$TARGET_USER/g" "$HOME_DIR/.config/gtk-3.0/bookmarks"
 
 # === shorin niri自定义配置 ===
 # 修复壁纸图层问题
