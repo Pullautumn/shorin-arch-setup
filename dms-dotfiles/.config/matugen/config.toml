@@ -1,5 +1,5 @@
 
-[config.wallpaper]
+[config]
 
 [templates.pywalfox]
 input_path = '~/.config/matugen/templates/pywalfox-colors.json'
@@ -37,4 +37,5 @@ post_hook = 'bash ~/.cache/matugen/recoloricons.sh &'
 [templates.fastfetch]
 input_path = '~/.config/matugen/templates/fastfetch-config.jsonc'
 output_path = '~/.config/fastfetch/config.jsonc'
+
 

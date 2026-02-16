@@ -313,8 +313,11 @@ EOT
 
 fi
 
+
 # ============================================================================
 #   Shorin DMS 杂交/自定义
+#
+# 
 # ============================================================================
 
 
@@ -343,9 +346,15 @@ trap cleanup_sudo EXIT INT TERM
 DMS_DOTFILES_DIR="$PARENT_DIR/dms-dotfiles"
 
 # === 文档管理器配置 ===
+# 修复输入法导致nautilus无法重命名的问题
 configure_nautilus_user
+# 安装thuanar
+if command -v niri &>/dev/null; then
+    log "Niri detected, installing Thunar and related plugins..."
+    exe as_user yay -S --noconfirm --needed xdg-desktop-portal-gtk thunar tumbler ffmpegthumbnailer poppler-glib gvfs-smb file-roller thunar-archive-plugin gnome-keyring thunar-volman gvfs-mtp gvfs-gphoto2 webp-pixbuf-loader libgsf
+fi
 
-# === niri自定义配置 ===
+# === shorin niri自定义配置 ===
 
 # === 自定义fish和kitty配置 ===
 if command -v kitty &>/dev/null; then
