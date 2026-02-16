@@ -19,3 +19,5 @@ user_pref("extensions.activeThemeID", "default-theme@mozilla.org");
 user_pref("extensions.autoDisableScopes", 0);
 user_pref("extensions.postDownloadThirdPartyPrompt", false);
 user_pref("media.eme.enabled", true);
+user_pref("browser.tabs.splitView.enabled", true);
+
