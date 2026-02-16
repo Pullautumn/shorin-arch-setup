@@ -3,43 +3,43 @@ bazaar                                   # Gui store for flatpak software
 bluetui                                  # tui for bluetooth
 brightnessctl                            # Device brightness control
 cava                                     # Console-based Audio Visualizer
-chafa                                    # terminal image preview 
 cliphist                                 # Clipboard history manager
 clipnotify                               # x11 clipboard manager
+wl-clipboard                             # Command-line copy/paste utilities
+xclip                                    # x11 clipboard manger
 eza                                      # Modern replacement for ls
-ffmpegthumbnailer                        # generate thumbnailers
 fish                                     # Friendly Interactive Shell
+starship                                 # Cross-shell prompt
+zoxide                                   # Smarter cd command
 grim                                     # Screenshot utility (Grabs images)
+slurp                                    # Region selector (Works with grim)
+satty                                    # Modern screenshot annotation tool
+wf-recorder                              # Screen recorder for Wayland
 hyprlock                                 # Screen locker with effects (Blur/Screenshots)
 hyprpicker                               # Color picker for Wayland
-imagemagick                              # Image manipulation tools
+chafa                                    # terminal image preview 
+timg                                     # view image in terminal
 imv                                      # Image Viewer for Wayland
+imagemagick                              # Image manipulation tools
+ffmpegthumbnailer                        # generate thumbnailers
+waifu2x-ncnn-vulkan                      # make anime wallpaper more clear
 jq                                       # Command-line JSON processor
 nwg-look                                 # GTK3 settings editor for Wayland
 pacman-contrib                           # pacman utilus
-satty                                    # Modern screenshot annotation tool
-slurp                                    # Region selector (Works with grim)
-starship                                 # Cross-shell prompt
 swayidle                                 # Idle management daemon (Screen lock/suspend)
 swayosd                                  # On-Screen Display for Volume/Brightness
 swww                                     # Efficient wallpaper daemon for Wayland
-timg                                     # view image in terminal
 ttf-jetbrains-mono-nerd                  # JetBrains Mono font (Nerd Font patched)
-waifu2x-ncnn-vulkan                      # make anime wallpaper more clear
 waybar                                   # Highly customizable Wayland bar
-wf-recorder                              # Screen recorder for Wayland
-wl-clipboard                             # Command-line copy/paste utilities
 wlsunset                                 # take care of your eyes
-xclip                                    # x11 clipboard manger
 xwayland-satellite                       # XWayland compatibility 
-zoxide                                   # Smarter cd command
 
 # --- AUR Packages ---
 AUR:clipsync-git                         # x11 <--> wayland clipboard sync 
+AUR:shorinclip-git                       # My clipboard tui
 AUR:ddcutil-service                      # Monitor hardware brightness control service
 AUR:matugen                              # Material You theme generator
 AUR:python-pywalfox                      # Pywal support for Firefox
-AUR:shorinclip-git                       # My clipboard tui
 AUR:ttf-jetbrains-maple-mono-nf-xx-xx    # Maple Mono NF font
 AUR:ttf-lxgw-wenkai-screen               # xia2 wu4 wen2 kai3 font
 AUR:waybar-niri-taskbar-git              # Waybar module: Niri Workspaces/Taskbar

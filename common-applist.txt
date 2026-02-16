@@ -1,47 +1,47 @@
 # --- Standard Packages ---
 baobab                                   # Disk Usage Analyzer
+gdu                                      # tui disk usage manager
 btop                                     # great tui mission center / system info
+mission-center                           # System Monitor (Task Manager style)
 dosfstools                               # Tools for FAT12/16/32 filesystems
 exfat-utils                              # exFAT filesystem utilities
-fcitx5-mozc                              # Japanese Input Method
-firefox                                  # the best browser on linux
-flatseal                                 # flatpak permission manager 
-gamescope                                # gaming compositor made by Valve
-gdu                                      # tui disk usage manager
+gnome-disk-utility                       # Disk Management Utility (Disks)
 gnome-calendar                           # calendar
 gnome-clocks                             # clocks
-gnome-disk-utility                       # Disk Management Utility (Disks)
 gnome-font-viewer                        # manage fonts easily
-heroic-games-launcher-bin                # Playing Epic games
-lact                                     # GPU Control Tool (Overclocking/Fan)
-lazyvim                                  # Great preset of neovim 
-localsend                                # send files to other devices
-lutris                                   # Gaming outside steam
-mangohud                                 # OSD tool for gaming (like msi afterburner)
-mission-center                           # System Monitor (Task Manager style)
-mpv                                      # Minimalist High Performance Video Player
-neovim                                   # Advanced version of vim 
-nm-connection-editor                     # Advanced network editor
-obs-studio                               # OBS Studio (Streaming & Recording)
-protonplus                               # manage proton 
+fcitx5-mozc                              # Japanese Input Method
 rime-wubi                                # wubi input method
-steam                                    # Gaming Platform (Valve)
+firefox                                  # the best browser on linux
 transmission-gtk                         # BitTorrent Client
-upscaler                                 # image upscaler (make it more clear)
-virt-manager                             # KVM qemu virtual machine
+localsend                                # send files to other devices
+nm-connection-editor                     # Advanced network editor
+gamescope                                # gaming compositor made by Valve
+heroic-games-launcher-bin                # Playing Epic games
+lutris                                   # Gaming outside steam
+steam                                    # Gaming Platform (Valve)
+protonplus                               # manage proton 
+mangohud                                 # OSD tool for gaming (like msi afterburner)
+lact                                     # GPU Control Tool (Overclocking/Fan)
 wine                                     # run windows exe 
+virt-manager                             # KVM qemu virtual machine
+lazyvim                                  # Great preset of neovim 
+neovim                                   # Advanced version of vim 
+mpv                                      # Minimalist High Performance Video Player
+obs-studio                               # OBS Studio (Streaming & Recording)
+upscaler                                 # image upscaler (make it more clear)
 yazi                                     # great tui file manager
+flatseal                                 # flatpak permission manager 
 
 # --- AUR Packages ---
 AUR:flclash-bin                          # Sometimes a detour is necessary to solve a problem
 AUR:linuxqq-appimage                     # Tencent QQ (AppImage)
+AUR:wechat-appimage                      # WeChat (AppImage)
 AUR:lsfg-vk-bin                          # yellow duck frame generator
 AUR:mangojuice-bin                       # GUI for mangohud                
 AUR:video-downloader                     # Download youtube or bilibili videos
 AUR:visual-studio-code-bin               # vscode 
-AUR:wechat-appimage                      # WeChat (AppImage)
 
-# --- Flatpak Packages ---      
+# --- Flatpak Packages ---       
 flatpak:com.github.wwmm.easyeffects      # Audio Effects for PipeWire 
 flatpak:io.github.fabrialberio.pinapp    # PinApp (modify .desktop files)
 flatpak:it.mijorus.gearlever             # AppImage Manager
