@@ -314,7 +314,7 @@ EOT
 fi
 
 # ============================================================================
-#   shorin 自定义
+#   Shorin DMS 杂交/自定义
 # ============================================================================
 
 
@@ -342,13 +342,17 @@ trap cleanup_sudo EXIT INT TERM
 # 定义 DMS 配置文件目录
 DMS_DOTFILES_DIR="$PARENT_DIR/dms-dotfiles"
 
-# === 自定义fish和kitty配置 ===
+# === 文档管理器配置 ===
+configure_nautilus_user
 
+# === niri自定义配置 ===
+
+# === 自定义fish和kitty配置 ===
 if command -v kitty &>/dev/null; then
     section "Shorin DMS" "terminal and shell"
     log "Applying Shorin DMS custom configurations for Terminal..."
     # 安装依赖
-    exe pacman -S --noconfirm --needed eza zoxide starship jq
+    exe pacman -S --noconfirm --needed eza zoxide starship jq fish
     # 复制终端配置
     log "Copying Terminal configuration..."
     chown -R "$TARGET_USER:" "$DMS_DOTFILES_DIR"
@@ -358,7 +362,7 @@ if command -v kitty &>/dev/null; then
     exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/starship.toml" "$HOME_DIR/.config/"
     # 复制自定义脚本
     as_user mkdir -p "$HOME_DIR/.local/bin"
-    exe as_user cp -rf "$DMS_DOTFILES_DIR/.local/bin/*" "$HOME_DIR/.local/bin/"
+    exe as_user cp -rf "$DMS_DOTFILES_DIR/.local/bin/." "$HOME_DIR/.local/bin/"
 
 else
     log "Kitty not found, skipping Kitty configuration."
@@ -380,6 +384,14 @@ exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/cava" "$HOME_DIR/.config/"
 # yazi
 exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/yazi" "$HOME_DIR/.config/"
 
+# === 壁纸配置 ===
+section "Shorin DMS" "wallpaper"
+WALLPAPER_SOURCE_DIR="$PARENT_DIR/resources/Wallpapers"
+WALLPAPER_DIR="$HOME_DIR/Pictures/Wallpapers"
+
+chown -R "$TARGET_USER:" "$WALLPAPER_SOURCE_DIR"
+as_user mkdir -p "$WALLPAPER_DIR"
+exe as_user cp -rf "$WALLPAPER_SOURCE_DIR/." "$WALLPAPER_DIR/"
 
 # === font configuration字体配置  ===
 section "Shorin DMS" "fonts"
