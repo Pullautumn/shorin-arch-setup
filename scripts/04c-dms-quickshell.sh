@@ -479,6 +479,9 @@ exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/yazi" "$HOME_DIR/.config/"
 # fcitx5
 rm -rf "$HOME_DIR/.config/fcitx5"
 exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/fcitx5" "$HOME_DIR/.config/"
+# fcitx5 快捷键冲突配置
+sed -i '/Mod+Space hotkey-overlay-title="Application Launcher" {/,/}/d' "$HOME_DIR/.config/niri/dms/binds.kdl"
+
 # firefox插件
 log "Configuring Firefox Policies..."
 POL_DIR="/etc/firefox/policies"

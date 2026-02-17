@@ -37,6 +37,8 @@ binds {
     Mod+Z hotkey-overlay-title="程序菜单 Applauncher" { spawn "dms" "ipc" "call" "spotlight" "toggle"; }
     // 这是我自己的剪贴板程序，对应aur包shorinclip-git
     Mod+Alt+V hotkey-overlay-title="剪贴板 Clipboard" {spawn-sh "kitty --single-instance --class shorinclip -e shorinclip";} // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
+    // dms 壁纸选择
+    Mod+Alt+W hotkey-overlay-title="壁纸切换 Wallpaper" { spawn "dms" "ipc" "call" "dankdash" "wallpaper";}
 
     Mod+O hotkey-overlay-title="切换总览界面 toggle overview" repeat=false { toggle-overview; }
     Mod+G repeat=false { toggle-overview; }
