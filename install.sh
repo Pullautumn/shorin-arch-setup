@@ -88,8 +88,8 @@ select_desktop() {
     # 1. 定义选项 (显示名称|内部ID)
     local OPTIONS=(
         "No Desktop |none"
-        "${H_YELLOW}Shorin's Niri (Recommended)${NC} |niri"
-        "${H_YELLOW}Shorin's DMS Niri+Kitty (Recommended)${NC} |shorindms"
+        "Shorin's Niri ${H_YELLOW}(Recommended)${NC} |niri"
+        "Shorin's DMS Niri+Kitty ${H_YELLOW}(Recommended)${NC} |shorindms"
         "KDE Plasma |kde"
         "GNOME |gnome"
         "Quickshell: End4--illogical-impulse (Hyprland)|end4"
