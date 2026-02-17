@@ -13,7 +13,7 @@ super+Z打开程序菜单，打开dms设置。进入“个性化-->壁纸”，�
 打开firefox之后进入扩展页面，我预装好了pywalfox扩展，点进pywalfox扩展的页面点击右上角的fetch。
 
 4.【vscode颜色同步】
-在vscode里安装DMS主题扩展，然后把主题改成DankShell。
+在vscode里安装DMS主题扩展，然后把主题改成DankShell，再重新更换一次壁纸。
 
 
 
