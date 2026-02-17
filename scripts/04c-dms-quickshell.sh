@@ -366,6 +366,8 @@ as_user sed -i "s/shorin/$TARGET_USER/g" "$HOME_DIR/.config/gtk-3.0/bookmarks"
 # 修复壁纸图层问题
 # ^quickshell$ place-within-backdrop true改成false
 sed -i '/match namespace="\^quickshell\$"/,/}/ s/place-within-backdrop[[:space:]]\+true/place-within-backdrop false/' "$DMS_NIRI_CONFIG_FILE"
+# 开启niri的时候不要自动开启数字锁定
+sed -i -E '/^\s*\/\//b; s/^(\s*)numlock/\1\/\/numlock/' "$DMS_NIRI_CONFIG_FILE"
 # 导入shorin的按键配置
 # 按键依赖的软件和配置
 exe as_user yay -S --noconfirm --needed satty mpv fuzzel shorinclip-git kitty
