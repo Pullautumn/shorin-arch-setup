@@ -452,7 +452,9 @@ exe as_user cp -rf "$DMS_DOTFILES_DIR/.vimrc" "$HOME_DIR/"
 section "Shorin DMS" "flatpak"
 log "Configuring Flatpak for Shorin DMS..."
 
+
 if command -v flatpak &>/dev/null; then
+exe as_user yay -S --noconfirm --needed bazaar
 as_user flatpak override --user --filesystem="$HOME_DIR/.themes"
 as_user flatpak override --user --filesystem=xdg-config/gtk-4.0
 as_user flatpak override --user --filesystem=xdg-config/gtk-3.0
