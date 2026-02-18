@@ -71,12 +71,6 @@ binds {
     }
 
     // === 窗口管理 (清理冲突项) ===
-    // Mod+Shift+F (全屏) -> Shorin 用 Mod+Alt+F，未冲突，可保留作为备用
-    Mod+Shift+F { fullscreen-window; }
-    
-    // Mod+Shift+T (切换浮动) -> Shorin 用 Mod+V，未冲突，可保留
-    Mod+Shift+T { toggle-window-floating; }
-    
     // 创建窗口规则 (Mod+Shift+W) -> Shorin 用 Mod+Shift+X (标签页)，未冲突
     Mod+Shift+W hotkey-overlay-title="Create window rule" { spawn "dms" "ipc" "call" "window-rules" "toggle"; }
 
