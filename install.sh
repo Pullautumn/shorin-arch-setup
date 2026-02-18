@@ -81,7 +81,7 @@ show_banner() {
     echo -e "${DIM}   :: Arch Linux Automation Protocol :: v1.1 ::${NC}"
     echo ""
 }
-DankMaterialShell
+
 # --- Desktop Selection Menu ---
 select_desktop() {
     show_banner
