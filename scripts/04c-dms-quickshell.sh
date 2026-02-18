@@ -135,6 +135,7 @@ if curl -fsSL "$DMS_URL" -o "$INSTALLER_SCRIPT"; then
     else
         # DMS 安装失败不应该导致整个系统安装退出，所以只警告
         warn "DMS installer returned an error code. You may need to install it manually."
+        exit 1 
     fi
     rm -f "$INSTALLER_SCRIPT"
 else
