@@ -4,10 +4,7 @@
 
 // 放进overview里的壁纸程序
 layer-rule{
-    match namespace="hyprpaper"
     match namespace="dms:blurwallpaper"
-    match namespace="awww-daemon"
-    match namespace="swww-daemonoverview"
      place-within-backdrop true
 }
 // 以浮动模式打开imv（一个轻量化图片预览程序）且不自动聚焦
