@@ -11,7 +11,7 @@ export BOLD='\033[1m'
 export DIM='\033[2m'
 export ITALIC='\033[3m'
 export UNDER='\033[4m'
-
+export H_MAGENTA='\033[1;35m'
 # 常用高亮色
 export H_RED='\033[1;31m'
 export H_GREEN='\033[1;32m'
