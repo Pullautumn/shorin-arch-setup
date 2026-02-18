@@ -30,6 +30,8 @@ binds {
 
     // Suggested binds for running programs: terminal, app launcher, screen locker.
     Mod+T hotkey-overlay-title="终端 Terminal" { spawn "kitty" "--single-instance"; }
+    // settings
+    Mod+F2 hotkey-overlay-title="设置 Settings" { spawn-sh "dms ipc call settings focusOrToggle";}
     // 文档管理器。如果有thunar的话会优先打开thunar，没有的话会打开nautilus，不要问我为什么（）
     Mod+E hotkey-overlay-title="文档管理器 Filemanager" { spawn-sh "thunar || env GSK_RENDERER=gl GTK_IM_MODULE=fcitx  nautilus"; }
     // 另一个打开nautilus的快捷键，主要是为了在同时安装thunar和nautilus的情况下打开naultilus
@@ -45,6 +47,7 @@ binds {
     // 关闭聚焦窗口
     Mod+Q hotkey-overlay-title="关闭聚焦窗口 Close focus window" repeat=false { close-window; }
     Alt+F4 hotkey-overlay-title=null repeat=false { close-window; }
+    
 
     // mod+鼠标中键 关闭窗口
     Mod+MouseMiddle  { close-window; }
@@ -71,8 +74,6 @@ binds {
     // 移动colume（列）
     // super+ctrl+方向键
     Mod+Ctrl+Left hotkey-overlay-title=null { move-column-left; }
-    Mod+Ctrl+Down  { move-window-down; }
-    Mod+Ctrl+Up    { move-window-up; }
     Mod+Ctrl+Right hotkey-overlay-title=null { move-column-right; }
     // super+ctrl+vimkey
     Mod+Ctrl+H     { move-column-left; }
@@ -151,17 +152,6 @@ binds {
     Mod+Shift+Alt+Down  { move-workspace-to-monitor-down; }
     Mod+Shift+Alt+Right  { move-workspace-to-monitor-right; }
     Mod+Shift+Alt+Left  { move-workspace-to-monitor-left; }
-    
-    // 上下切换工作区
-    Mod+Page_Down hotkey-overlay-title=null     { focus-workspace-down; }
-    Mod+Page_Up hotkey-overlay-title=null       { focus-workspace-up; }
-    Mod+U              { focus-workspace-down; }
-    Mod+I              { focus-workspace-up; }
-    // 上下移动窗口到其他工作区
-    Mod+Ctrl+Page_Down hotkey-overlay-title=null { move-column-to-workspace-down; }
-    Mod+Ctrl+Page_Up hotkey-overlay-title=null  { move-column-to-workspace-up; }
-    Mod+Ctrl+U         { move-column-to-workspace-down; }
-    Mod+Ctrl+I         { move-column-to-workspace-up; }
 
     // You can bind mouse wheel scroll ticks using the following syntax.
     // These binds will change direction based on the natural-scroll setting.
@@ -351,7 +341,6 @@ binds {
     // The quit action will show a confirmation dialog to avoid accidental exits.
     Mod+Shift+Ctrl+Q hotkey-overlay-title=null { spawn "wlogout"; } 
     Mod+Shift+E hotkey-overlay-title="退出niri Quit niri" { quit; }
-    Ctrl+Alt+Delete hotkey-overlay-title="电源菜单 Powermenu" { spawn "wlogout"; }
     // Powers off the monitors. To turn them back on, do any input like
 
     // moving the mouse or pressing any other key.

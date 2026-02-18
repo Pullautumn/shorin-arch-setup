@@ -1,0 +1,137 @@
+// 这是经过 Shorin 净化后的 DMS 快捷键绑定
+// 只保留了 DMS 特有功能和媒体控制，且不与 Shorin Niri 冲突
+
+binds {
+    // === DMS 特有组件 (保留未冲突的) ===
+    
+    // 任务管理器 (Mod+M) -> Shorin 未占用
+    Mod+M hotkey-overlay-title="Task Manager" {
+        spawn "dms" "ipc" "call" "processlist" "focusOrToggle";
+    }
+
+    // 电源菜单 (Super+X) -> Shorin 用的是 Mod+Shift+Ctrl+Q (wlogout) 和 Mod+Alt+P (关显示器)，未占用 Super+X
+    Super+X hotkey-overlay-title="Power Menu: Toggle" { spawn "dms" "ipc" "call" "powermenu" "toggle"; }
+
+    // 壁纸选择器 (Mod+Y) -> Shorin 用的是 Mod+Alt+W，保留这个作为备用
+    Mod+Y hotkey-overlay-title="Browse Wallpapers" {
+        spawn "dms" "ipc" "call" "dankdash" "wallpaper";
+    }
+
+    // 记事本 (Mod+Shift+N) -> Shorin 用的是 Mod+N (切换浮动聚焦) 和 Mod+Alt+N，Shift+N 未占用
+    Mod+Shift+N hotkey-overlay-title="Notepad" { spawn "dms" "ipc" "call" "notepad" "toggle"; }
+
+    // 锁屏 (Mod+Alt+L) -> Shorin 未占用
+    Mod+Alt+L hotkey-overlay-title="Lock Screen" {
+        spawn "dms" "ipc" "call" "lock" "lock";
+    }
+
+    // Ctrl+Alt+Del 呼出任务管理器 -> 经典组合键，保留
+    Ctrl+Alt+Delete hotkey-overlay-title="Task Manager" {
+        spawn "dms" "ipc" "call" "processlist" "focusOrToggle";
+    }
+
+    // === 媒体控制 (Shorin 配置中未定义这些，全部保留) ===
+    XF86AudioRaiseVolume allow-when-locked=true {
+        spawn "dms" "ipc" "call" "audio" "increment" "3";
+    }
+    XF86AudioLowerVolume allow-when-locked=true {
+        spawn "dms" "ipc" "call" "audio" "decrement" "3";
+    }
+    XF86AudioMute allow-when-locked=true {
+        spawn "dms" "ipc" "call" "audio" "mute";
+    }
+    XF86AudioMicMute allow-when-locked=true {
+        spawn "dms" "ipc" "call" "audio" "micmute";
+    }
+    XF86AudioPause allow-when-locked=true {
+        spawn "dms" "ipc" "call" "mpris" "playPause";
+    }
+    XF86AudioPlay allow-when-locked=true {
+        spawn "dms" "ipc" "call" "mpris" "playPause";
+    }
+    XF86AudioPrev allow-when-locked=true {
+        spawn "dms" "ipc" "call" "mpris" "previous";
+    }
+    XF86AudioNext allow-when-locked=true {
+        spawn "dms" "ipc" "call" "mpris" "next";
+    }
+    Ctrl+XF86AudioRaiseVolume allow-when-locked=true {
+        spawn "dms" "ipc" "call" "mpris" "increment" "3";
+    }
+    Ctrl+XF86AudioLowerVolume allow-when-locked=true {
+        spawn "dms" "ipc" "call" "mpris" "decrement" "3";
+    }
+
+    // === 亮度控制 (Shorin 未定义，保留) ===
+    XF86MonBrightnessUp allow-when-locked=true {
+       spawn "dms" "ipc" "call" "brightness" "increment" "5" "";
+    }
+    XF86MonBrightnessDown allow-when-locked=true {
+       spawn "dms" "ipc" "call" "brightness" "decrement" "5" "";
+    }
+
+    // === 窗口管理 (清理冲突项) ===
+    // Mod+Shift+F (全屏) -> Shorin 用 Mod+Alt+F，未冲突，可保留作为备用
+    Mod+Shift+F { fullscreen-window; }
+    
+    // Mod+Shift+T (切换浮动) -> Shorin 用 Mod+V，未冲突，可保留
+    Mod+Shift+T { toggle-window-floating; }
+    
+    // 创建窗口规则 (Mod+Shift+W) -> Shorin 用 Mod+Shift+X (标签页)，未冲突
+    Mod+Shift+W hotkey-overlay-title="Create window rule" { spawn "dms" "ipc" "call" "window-rules" "toggle"; }
+
+    // === 工作区导航 (清理冲突项) ===
+    // PageUp/Down 系列 Shorin 未使用，保留
+    Mod+Page_Down          { focus-workspace-down; }
+    Mod+Page_Up            { focus-workspace-up; }
+    Mod+U                  { focus-workspace-down; }
+    Mod+I                  { focus-workspace-up; }
+    
+    // 移动窗口到工作区 (清理了与 Shorin Mod+Ctrl+方向键 冲突的项)
+    // Mod+Ctrl+U/I 未冲突，保留
+    Mod+Ctrl+U             { move-column-to-workspace-down; }
+    Mod+Ctrl+I             { move-column-to-workspace-up; }
+
+    // === 工作区管理 ===
+    // 重命名工作区 (Ctrl+Shift+R) -> Shorin 未占用
+    Ctrl+Shift+R hotkey-overlay-title="Rename Workspace" {
+        spawn "dms" "ipc" "call" "workspace-rename" "open";
+    }
+
+    // === 移动工作区 (保留 PageUp/Down 系列) ===
+    Mod+Shift+Page_Down { move-workspace-down; }
+    Mod+Shift+Page_Up   { move-workspace-up; }
+    Mod+Shift+U         { move-workspace-down; }
+    Mod+Shift+I         { move-workspace-up; }
+
+    // === 数字工作区 (1-9) ===
+    // Shorin 暂时没定义数字键切工作区，保留 DMS 的默认设置
+    Mod+1 { focus-workspace 1; }
+    Mod+2 { focus-workspace 2; }
+    Mod+3 { focus-workspace 3; }
+    Mod+4 { focus-workspace 4; }
+    Mod+5 { focus-workspace 5; }
+    Mod+6 { focus-workspace 6; }
+    Mod+7 { focus-workspace 7; }
+    Mod+8 { focus-workspace 8; }
+    Mod+9 { focus-workspace 9; }
+
+    Mod+Ctrl+1 { move-column-to-workspace 1; }
+    Mod+Ctrl+2 { move-column-to-workspace 2; }
+    Mod+Ctrl+3 { move-column-to-workspace 3; }
+    Mod+Ctrl+4 { move-column-to-workspace 4; }
+    Mod+Ctrl+5 { move-column-to-workspace 5; }
+    Mod+Ctrl+6 { move-column-to-workspace 6; }
+    Mod+Ctrl+7 { move-column-to-workspace 7; }
+    Mod+Ctrl+8 { move-column-to-workspace 8; }
+    Mod+Ctrl+9 { move-column-to-workspace 9; }
+
+    // === 其他备用 ===
+    // 备用截图键 (Shorin 用 Print/Mod+Alt+A 等)
+    XF86Launch1 { screenshot; }
+    Ctrl+XF86Launch1 { screenshot-screen; }
+    Alt+XF86Launch1 { screenshot-window; }
+    
+    // 关闭显示器备用 (Mod+Shift+P) -> Shorin 用 Mod+Alt+P
+    Mod+Shift+P { power-off-monitors; }
+}
