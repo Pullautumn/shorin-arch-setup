@@ -442,7 +442,7 @@ sed -i '/match namespace="\^quickshell\$"/,/}/ s/place-within-backdrop[[:space:]
 sed -i -E '/^\s*\/\//b; s/^(\s*)numlock/\1\/\/numlock/' "$DMS_NIRI_CONFIG_FILE"
 # 导入shorin的按键配置
 # 按键依赖的软件和配置
-exe as_user yay -S --noconfirm --needed satty mpv fuzzel shorinclip-git kitty
+exe as_user yay -S --noconfirm --needed satty mpv kitty
 exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/mpv" "$HOME_DIR/.config/"
 exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/satty" "$HOME_DIR/.config/"
 exe as_user cp -rf "$DMS_DOTFILES_DIR/.config/fuzzel" "$HOME_DIR/.config/"
