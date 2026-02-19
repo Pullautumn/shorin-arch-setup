@@ -446,14 +446,6 @@ if [ -d "/root/shorin-arch-setup" ]; then
     rm -rfv /root/shorin-arch-setup
 fi
 
-if [ -d "$HOME_DIR/shorin-arch-setup" ]; then
-    log "Removing installer from $HOME_DIR/shorin-arch-setup"
-    rm -rfv $HOME_DIR/shorin-arch-setup
-else
-    log "Repo cleanup skipped."
-    log "please remove the folder yourself."
-fi
-
 #--- 清理无用的下载残留
 for dir in /var/cache/pacman/pkg/download-*/; do
     # 检查目录是否存在
