@@ -1,4 +1,6 @@
 
+如果出现了两个任务栏可以运行以下命令关掉：
+systemctl --user disable --now  dms
 
 【重要按键】
 super+T 打开终端
