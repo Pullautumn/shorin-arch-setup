@@ -241,6 +241,13 @@ EOT
     fi
 
     chown -R "$TARGET_USER:" "$PARENT_DIR/quickshell-dotfiles"
+    
+    # === [ 核心修复点 ] ===
+    # 精准清除目标路径中会导致冲突的非目录文件(软链接)
+    as_user rm -rf "$HOME_DIR/.local/share/fcitx5"
+    as_user rm -rf "$HOME_DIR/.config/fcitx5"
+    # =======================
+    
     force_copy "$PARENT_DIR/quickshell-dotfiles/." "$HOME_DIR/"
 
 elif [[ "$DMS_HYPR_INSTALLED" == "true" ]]; then
@@ -258,15 +265,19 @@ env = LC_CTYPE,en_US.UTF-8
 env = LANG,zh_CN.UTF-8
 # ----------------------------------
 EOT
-        
-        # 换用安全拷贝
-        chown -R "$TARGET_USER:" "$PARENT_DIR/quickshell-dotfiles"
-        force_copy "$PARENT_DIR/quickshell-dotfiles/." "$HOME_DIR/.config/"
     else
         log "Fcitx5 configuration already exists in Hyprland config, skipping."
     fi
+    
+    chown -R "$TARGET_USER:" "$PARENT_DIR/quickshell-dotfiles"
+    
+    # === [ 核心修复点 ] ===
+    as_user rm -rf "$HOME_DIR/.local/share/fcitx5"
+    as_user rm -rf "$HOME_DIR/.config/fcitx5"
+    # 这里我顺手修正了原本脚本的一个小 Bug: 
+    # 如果 quickshell-dotfiles 包含 .config 和 .local，应复制到 ~ 下，而不是 ~/.config/ 下，否则会变成 ~/.config/.config
+    force_copy "$PARENT_DIR/quickshell-dotfiles/." "$HOME_DIR/"
 fi
-
 # ==============================================================================
 # filemanager
 # ==============================================================================
