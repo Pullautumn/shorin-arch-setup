@@ -1,5 +1,5 @@
 #!/bin/bash
- set -e
+
 # ==============================================================================
 # 03c-snapshot-before-desktop.sh
 # Creates a system snapshot before installing major Desktop Environments.
