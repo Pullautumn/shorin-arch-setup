@@ -259,7 +259,7 @@ env = LANG,zh_CN.UTF-8
 # ----------------------------------
 EOT
 
-    cp -rf "$PARENT_DIR/quickshell-dotfiles/"* "$HOME_DIR/.config/"
+    cp -rf "$PARENT_DIR/quickshell-dotfiles/"* "$HOME_DIR/"
     chown -R "$TARGET_USER" "$HOME_DIR/.config"
     else
         log "fcitx5 configuration already exists in Hyprland config, skipping."
