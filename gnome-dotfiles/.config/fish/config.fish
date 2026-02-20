@@ -27,9 +27,7 @@ abbr reboot 'systemctl reboot'
 function 滚
 	sysup 
 end
-function raw
-	command ~/.config/scripts/random-anime-wallpaper.sh $argv
-end
+
 
 function 安装
 	command yay -S $argv
