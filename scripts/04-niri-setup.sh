@@ -539,6 +539,9 @@ run_hide_desktop_file
 rm -f "$SUDO_TEMP_FILE"
 
 
+# === 教程文件 ===
+log "Copying tutorial file on desktop..."
+as_user cp "$PARENT_DIR/resources/必看-shoirn-Niri使用方法.txt" "$HOME_DIR/必看-Shoirn-Niri使用方法.txt"
 # ==============================================================================
 # STEP 9: Cleanup & Auto-Login
 # ==============================================================================
