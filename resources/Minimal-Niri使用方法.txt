@@ -1,7 +1,7 @@
 
-super+shift+/ 可以打开按键教程。
 
 【重要按键】
+super+shift+/ 打开按键教程
 super+T 打开终端
 super+E 打开文档管理器
 super+Z 开始菜单
