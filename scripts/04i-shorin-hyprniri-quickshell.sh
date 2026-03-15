@@ -118,8 +118,7 @@ else
 fi
 chown -R "$TARGET_USER:" "$HOME_DIR/Templates"
 
-log "Applying file manager bookmarks..."
-as_user sed -i "s/shorin/$TARGET_USER/g" "$HOME_DIR/.config/gtk-3.0/bookmarks"
+
 
 # --- Dotfiles & Wallpapers ---
 section "Shorin Hyprniri" "Dotfiles & Wallpapers"
@@ -171,6 +170,8 @@ else
     warn "Flatpak is not installed. Skipping overrides."
 fi
 
+log "Applying file manager bookmarks..."
+as_user sed -i "s/shorin/$TARGET_USER/g" "$HOME_DIR/.config/gtk-3.0/bookmarks"
 
 # === update module ===
 if command -v kitty &>/dev/null; then
