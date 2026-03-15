@@ -551,7 +551,7 @@ fi
 # === 自定义fish和kitty配置 ===
 if command -v kitty &>/dev/null; then
     section "Shorin DMS" "terminal and shell"
-    SHORIN_TERM_PKGS="cups-pk-helper kimageformats dsearch-bin fuzzel wf-recorder slurp eza zoxide starship jq fish libnotify timg imv cava imagemagick wl-clipboard cliphist shorin-contrib-git"
+    SHORIN_TERM_PKGS="cups-pk-helper kimageformats dsearch-bin fuzzel wf-recorder wl-screenrec-git slurp eza zoxide starship jq fish libnotify timg imv cava imagemagick wl-clipboard cliphist shorin-contrib-git"
     echo "$SHORIN_TERM_PKGS" >> "$VERIFY_LIST"
     exe as_user yay -S --noconfirm --needed $SHORIN_TERM_PKGS
     chown -R "$TARGET_USER:" "$DMS_DOTFILES_DIR"
