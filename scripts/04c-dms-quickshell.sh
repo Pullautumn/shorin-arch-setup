@@ -417,7 +417,7 @@ if [ "$SKIP_DM" = true ]; then
     log "Display Manager setup skipped (Conflict found or user opted out)."
     warn "You will need to start your session manually from the TTY."
 else
-    setup_greetd_tuigreet
+    setup_ly
 fi
 
 # ============================================================================

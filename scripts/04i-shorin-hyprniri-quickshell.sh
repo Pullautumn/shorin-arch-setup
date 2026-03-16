@@ -204,5 +204,5 @@ if [ "$SKIP_DM" = true ]; then
     warn "You will need to start your session manually from the TTY."
 else
     
-    setup_greetd_tuigreet
+    setup_ly
 fi

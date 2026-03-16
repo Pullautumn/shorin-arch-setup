@@ -56,8 +56,8 @@ CAELESTIA_DIR="$HOME_DIR/.local/share/caelestia"
 # Clone to .local (Caelestia uses symlinks, not direct copies)
 log "Cloning repository to $CAELESTIA_DIR ..."
 if [ -d $CAELESTIA_DIR ]; then
-        warn "Repository clone failed or already exists. Deleting..."
-        rm -rf "$CAELESTIA_DIR"
+    warn "Repository clone failed or already exists. Deleting..."
+    rm -rf "$CAELESTIA_DIR"
 fi
 
 if exe as_user git clone "$CAELESTIA_REPO" "$CAELESTIA_DIR"; then
@@ -85,14 +85,14 @@ HYPR_CONFIG="$CAELESTIA_DIR/hypr/hyprland.conf"
 
 # 5.1 Fcitx5 Configuration
 if [ -f "$HYPR_CONFIG" ]; then
-    if ! grep -q "fcitx5" "$HYPR_CONFIG"; then 
+    if ! grep -q "fcitx5" "$HYPR_CONFIG"; then
         log "Injecting Fcitx5 config into Hyprland..."
         echo "exec-once = fcitx5 -d" >> "$HYPR_CONFIG"
         echo "env = LC_CTYPE, en_US.UTF-8" >> "$HYPR_CONFIG"
         chown -R "$TARGET_USER:" "$PARENT_DIR/quickshell-dotfiles"
         as_user cp -rf "$PARENT_DIR/quickshell-dotfiles/." "$HOME_DIR/"
     fi
-
+    
     # 5.2 Chinese Locale Check
     # Fix: Ensure grep reads from input correctly
     LOCALE_AVAILABLE=$(locale -a)
@@ -112,9 +112,9 @@ success "Post-configuration completed."
 section "config" "file manager"
 
 if ! command -v thunar; then
-
-exe pacman -S --needed --noconfirm thunar tumbler ffmpegthumbnailer poppler-glib gvfs-smb file-roller thunar-archive-plugin gnome-keyring polkit-gnome
-
+    
+    exe pacman -S --needed --noconfirm thunar tumbler ffmpegthumbnailer poppler-glib gvfs-smb file-roller thunar-archive-plugin gnome-keyring polkit-gnome
+    
 fi
 
 # === 隐藏多余的 Desktop 图标 ===
@@ -123,7 +123,7 @@ log "Hiding useless .desktop files"
 run_hide_desktop_file
 
 # ==============================================================================
-#  6. dispaly manager 
+#  6. dispaly manager
 # ==============================================================================
 section "Config" "Display Manager"
 
@@ -132,11 +132,11 @@ log "Cleaning up legacy TTY autologin configs..."
 rm -f /etc/systemd/system/getty@tty1.service.d/autologin.conf 2>/dev/null
 
 if [ "$SKIP_DM" = true ]; then
-  log "Display Manager setup skipped (Conflict found or user opted out)."
-  warn "You will need to start your session manually from the TTY."
+    log "Display Manager setup skipped (Conflict found or user opted out)."
+    warn "You will need to start your session manually from the TTY."
 else
-
-  setup_greetd_tuigreet
+    
+    setup_ly
 fi
 
 section "End" "Module 04e (Caelestia) Completed"

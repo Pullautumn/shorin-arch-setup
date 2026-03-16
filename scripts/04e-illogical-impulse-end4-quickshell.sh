@@ -36,7 +36,7 @@ if curl -fsSL "$II_URL" -o "$INSTALLER_SCRIPT"; then
     
     chmod +x "$INSTALLER_SCRIPT"
     chown "$TARGET_USER" "$INSTALLER_SCRIPT"
-
+    
     log "Executing End4 installer as user ($TARGET_USER)..."
     log "NOTE: If the installer asks for input, this script might hang."
     
@@ -102,9 +102,9 @@ fi
 # 同样检查防止重复添加
 if ! grep -q "^[[:space:]]*exec-once = fcitx5 -d" "$END4_HYPR_CUS_EXEC" 2>/dev/null; then
     log "Adding Fcitx5 autostart command to execs.conf..."
-
+    
     echo "exec-once = fcitx5 -d" >> "$END4_HYPR_CUS_EXEC"
-
+    
 else
     log "Fcitx5 autostart already exists in execs.conf, skipping."
 fi
@@ -138,11 +138,11 @@ log "Cleaning up legacy TTY autologin configs..."
 rm -f /etc/systemd/system/getty@tty1.service.d/autologin.conf 2>/dev/null
 
 if [ "$SKIP_DM" = true ]; then
-  log "Display Manager setup skipped (Conflict found or user opted out)."
-  warn "You will need to start your session manually from the TTY."
+    log "Display Manager setup skipped (Conflict found or user opted out)."
+    warn "You will need to start your session manually from the TTY."
 else
-
-  setup_greetd_tuigreet
+    
+    setup_ly
 fi
 
 log "Module 04e (End4) completed."
