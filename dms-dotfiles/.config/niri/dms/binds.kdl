@@ -38,6 +38,20 @@ binds {
     // 关闭聚焦窗口
     Mod+Q hotkey-overlay-title="关闭聚焦窗口 Close focus window" repeat=false { close-window; }
     Alt+F4 hotkey-overlay-title=null repeat=false { close-window; }
+
+    // niri-sidebar扩展相关
+    // 警告：这是实验性功能
+    // 切换 移动聚焦窗口至侧边栏 （建议配合切换浮动聚焦的快捷键使用，我设置的是super+n）
+    Mod+Alt+S hotkey-overlay-title="收起窗口 Move to Sidebar" { spawn "niri-sidebar" "toggle-window"; }
+    Mod+M hotkey-overlay-title="收起窗口 Move to Sidebar" { spawn "niri-sidebar" "toggle-window"; }
+    // 切换 收起/展开侧边栏
+    Mod+Alt+Z hotkey-overlay-title="展开/收起侧边栏 Toggle Sidebar" { spawn "niri-sidebar" "toggle-visibility";}
+    // 反向排序侧边栏
+    Mod+Alt+X hotkey-overlay-title=null { spawn "niri-sidebar" "flip";}
+    // 重新排列侧边栏中的窗口（侧边栏中的窗口本质是一个浮动窗口，你有时候可能会把它移动到别的地方
+    // 例如 ctrl+c居中。此时按下此键可以重新排列）
+    Mod+Alt+R hotkey-overlay-title="重置侧边栏 Reorder Sidebar"  { spawn "niri-sidebar" "reorder"; }
+
     
     // mod+鼠标中键 关闭窗口
     Mod+MouseMiddle  { close-window; }
@@ -206,8 +220,6 @@ binds {
     // =========================================================
     
     // === DMS 特有组件 ===
-    // 任务管理器 (Mod+M)
-    Mod+M hotkey-overlay-title="Task Manager" { spawn "dms" "ipc" "call" "processlist" "focusOrToggle"; }
     // 电源菜单 (Super+X)
     Super+X hotkey-overlay-title="Power Menu: Toggle" { spawn "dms" "ipc" "call" "powermenu" "toggle"; }
     // 壁纸选择器 (Mod+Y，作为 Mod+Alt+W 的备用)
