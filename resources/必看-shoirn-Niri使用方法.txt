@@ -1,5 +1,7 @@
 
 
+shorin-niri的详细文档可以看 https://shorin.xyz/wiki/archsetup 里面有一些重要内容的修改。如果你相对我的配置进行一些修改，建议先看一下这个文档。
+
 【重要按键】
 super+shift+/ 打开按键教程
 super+T 打开终端
