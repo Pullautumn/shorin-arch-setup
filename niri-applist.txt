@@ -35,6 +35,8 @@ waybar                                   # Highly customizable Wayland bar
 wlsunset                                 # take care of your eyes
 xwayland-satellite                       # XWayland compatibility 
 pavucontrol                              # sound config GUI
+downgrade                                # downgrade software version
+strace                                   # dependency of shorin-contrib-git 
 # --- AUR Packages ---
 AUR:shorin-contrib-git                   # shorin-utils
 AUR:clipsync-git                         # x11 <--> wayland clipboard sync 

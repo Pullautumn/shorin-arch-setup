@@ -447,6 +447,20 @@ if command -v clash-verge; then
      clash-verge-service-install || true
 fi
 
+# --- mangohud --- 
+section "Config" "MangoHud Configuration"
+if command -v mangohud &>/dev/null; then 
+
+    if [ -d "$HOME_DIR/.config/MangoHud" ]; then
+        log "MangoHud config already exists."
+    else
+        log "Deploying MangoHud config..."
+        force_copy "$PARENT_DIR/resources/MangoHud" "$HOME_DIR/.config/MangoHud"
+    fi
+
+fi 
+
+
 # ------------------------------------------------------------------------------
 # [FIX] CLEANUP GLOBAL SUDO CONFIGURATION
 # ------------------------------------------------------------------------------
